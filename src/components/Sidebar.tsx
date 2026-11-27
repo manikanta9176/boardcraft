@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       <div
-        className="px-4 py-5 flex items-center justify-between"
+        className="shrink-0 px-4 py-5 flex items-center justify-between"
         style={{ borderBottom: `1px solid ${theme.border}` }}
       >
         <div className="flex items-center gap-2.5">
@@ -151,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2.5 py-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-4">
         <div className="space-y-1 mb-5">
           <button
             onClick={() => { onOpenLobby(); onCloseMobile(); }}
@@ -176,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div
-        className="px-4 py-4 flex items-center gap-3"
+        className="shrink-0 px-4 py-4 flex items-center gap-3"
         style={{ borderTop: `1px solid ${theme.border}` }}
       >
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}88` }} />
@@ -201,7 +201,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           />
           <div
             ref={mobilePanelRef}
-            className="mobile-nav-panel relative z-10 h-full w-72 max-w-[82vw]"
+            className="mobile-nav-panel relative z-10 h-full w-72 max-w-[82vw] overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Game navigation"

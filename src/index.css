@@ -40,6 +40,10 @@
   padding-top: max(0.75rem, env(safe-area-inset-top));
 }
 
+.dialog-scroll-content {
+  -webkit-overflow-scrolling: touch;
+}
+
 .nav-game:not(:disabled):hover {
   background-color: color-mix(in srgb, currentColor 8%, transparent) !important;
 }

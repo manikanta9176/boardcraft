@@ -117,7 +117,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div
         ref={dialogRef}
-        className="relative z-10 w-full max-w-xl rounded-3xl p-4 sm:p-6 shadow-2xl overflow-y-auto animate-pop-in"
+        className="relative z-10 flex w-full max-w-xl flex-col overflow-hidden rounded-3xl shadow-2xl animate-pop-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="multiplayer-title"
@@ -130,7 +130,10 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
         }}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-5">
+        <div
+          className="flex shrink-0 items-start justify-between gap-3 border-b px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-6"
+          style={{ borderColor: theme.border }}
+        >
           <div>
             <div className="flex items-center gap-2">
               <span
@@ -148,13 +151,14 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
           <button
             onClick={onClose}
             aria-label="Close multiplayer window"
-            className="p-1.5 rounded-xl cursor-pointer"
+            className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-xl cursor-pointer"
             style={{ backgroundColor: theme.bgBoard, color: theme.textMuted }}
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
+        <div className="dialog-scroll-content min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
         {/* Transport Tabs */}
         <div
           className="grid grid-cols-2 p-1 rounded-xl gap-1 mb-5"
@@ -499,6 +503,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   );
