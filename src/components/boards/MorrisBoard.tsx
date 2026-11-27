@@ -116,7 +116,7 @@ export const MorrisBoard: React.FC<MorrisBoardProps> = ({
         <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
           <defs>
             <filter id="piece-shadow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" floodColor="#000000" floodOpacity="0.45" />
+              <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" floodColor="#000000" floodOpacity={theme.isDark ? 0.45 : 0.2} />
             </filter>
           </defs>
 

@@ -1,7 +1,7 @@
 export type Player = 1 | 2;
 export type GameMode = 'ai' | 'local' | 'online';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type ThemeId = 'sea-glass' | 'obsidian' | 'birch' | 'walnut';
+export type ThemeId = 'paper' | 'obsidian' | 'birch' | 'walnut';
 
 export type GameId =
   | 'three-mens-morris'
@@ -68,34 +68,34 @@ export interface ThemePalette {
 }
 
 export const THEMES: Record<ThemeId, ThemePalette> = {
-  'sea-glass': {
-    id: 'sea-glass',
-    label: 'Sea Glass',
-    bgApp: '#EEF5F3',
-    bgSidebar: '#E4EFEC',
-    bgSurface: '#FBFDFC',
-    bgSurfaceHover: '#E7F1EE',
-    bgGlass: 'rgba(248, 252, 250, 0.88)',
-    bgBoard: '#D8E8E3',
-    bgBoardAlt: '#C1D8D1',
-    border: 'rgba(34, 72, 68, 0.14)',
-    textPrimary: '#173B3A',
-    textSecondary: '#3D625E',
-    textMuted: '#6F8D87',
-    boardLine: '#769B92',
-    boardNode: '#BCD2CB',
-    p1Color: '#FFF3D8',
-    p1Stroke: '#B69D6F',
-    p1Glow: 'rgba(182, 157, 111, 0.3)',
-    p1Name: 'Sand',
-    p2Color: '#D98773',
-    p2Stroke: '#B96353',
-    p2Glow: 'rgba(217, 135, 115, 0.3)',
-    p2Name: 'Coral',
-    accent: '#247C72',
-    accentSoft: 'rgba(36, 124, 114, 0.12)',
-    validHighlight: '#238A74',
-    captureHighlight: '#C26055',
+  paper: {
+    id: 'paper',
+    label: 'Paper & Ink',
+    bgApp: '#F4F1EA',
+    bgSidebar: '#ECE8E0',
+    bgSurface: '#FFFCF8',
+    bgSurfaceHover: '#F0EDE7',
+    bgGlass: 'rgba(250, 248, 244, 0.9)',
+    bgBoard: '#EEEAE3',
+    bgBoardAlt: '#DDD9D1',
+    border: 'rgba(22, 21, 19, 0.1)',
+    textPrimary: '#161513',
+    textSecondary: '#5F5B55',
+    textMuted: '#858078',
+    boardLine: '#99958D',
+    boardNode: '#D2CEC6',
+    p1Color: '#181715',
+    p1Stroke: '#090908',
+    p1Glow: 'rgba(22, 21, 19, 0.16)',
+    p1Name: 'Ink',
+    p2Color: '#6267F0',
+    p2Stroke: '#4D52D7',
+    p2Glow: 'rgba(98, 103, 240, 0.22)',
+    p2Name: 'Periwinkle',
+    accent: '#161513',
+    accentSoft: 'rgba(22, 21, 19, 0.075)',
+    validHighlight: '#6267F0',
+    captureHighlight: '#CC725E',
     isDark: false,
   },
   obsidian: {

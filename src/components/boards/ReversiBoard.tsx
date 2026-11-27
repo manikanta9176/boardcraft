@@ -68,7 +68,7 @@ export const ReversiBoard: React.FC<ReversiBoardProps> = ({
                       style={{
                         backgroundColor: cell === 1 ? theme.p1Color : theme.p2Color,
                         border: `2px solid ${cell === 1 ? theme.p1Stroke : theme.p2Stroke}`,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.35)',
+                        boxShadow: `0 2px 5px rgba(0,0,0,${theme.isDark ? 0.32 : 0.12})`,
                       }}
                     >
                       {last && (

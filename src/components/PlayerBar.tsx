@@ -90,7 +90,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                 {label}
               </span>
               {active && (
-                <span className="player-active-tag" style={{ color: player === 1 ? theme.accent : theme.captureHighlight }}>
+                  <span className="player-active-tag" style={{ color: theme.validHighlight }}>
                   TURN
                 </span>
               )}
@@ -131,7 +131,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           boxShadow: winner === null ? `0 4px 14px ${turn === 1 ? theme.p1Glow : theme.p2Glow}` : 'none',
         }}
       >
-        {winner === null && <span className="turn-pulse-dot" style={{ backgroundColor: activeColor, boxShadow: `0 0 0 4px ${turn === 1 ? theme.p1Glow : theme.p2Glow}` }} />}
+        {winner === null && <span className="turn-pulse-dot" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 0 4px ${turn === 1 ? theme.p1Glow : theme.p2Glow}` }} />}
         <span className="truncate text-sm font-bold tracking-tight">{announcement}</span>
         {winner === null && <span className="turn-identity truncate" style={{ color: theme.textMuted }}>{activeName} pieces</span>}
       </div>

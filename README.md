@@ -22,7 +22,7 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
 - **Local Wi-Fi / Hotspot Pairing** with manually exchanged offer and answer codes for devices on the same network
-- **4 Curated Tabletop Themes**: Sea Glass, Midnight Felt, Nordic Birch, and Royal Walnut
+- **4 Curated Tabletop Themes**: Paper & Ink, Midnight Felt, Nordic Birch, and Royal Walnut
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
 - **Direct game links** at `/play/<game-id>` with browser back and forward navigation

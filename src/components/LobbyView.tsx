@@ -39,24 +39,24 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
         <div className="relative z-10 grid lg:grid-cols-[1.05fr_.95fr] items-center gap-3 lg:gap-10 px-5 sm:px-9 xl:px-14 py-7 sm:py-10 xl:py-12">
           <div className="max-w-[640px]">
             <div className="inline-flex items-center gap-2 rounded-full py-1.5 px-2.5 text-[11px] font-bold tracking-[.08em]" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}` }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.accent, boxShadow: `0 0 10px ${theme.accent}` }} />
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}66` }} />
               THE STRATEGY ROOM
             </div>
-            <h1 id="lobby-title" className="display-face mt-5 text-[2.65rem] sm:text-5xl xl:text-[4.2rem] leading-[.99] font-bold tracking-[-.065em]" style={{ color: theme.textPrimary }}>
+            <h1 id="lobby-title" className="display-face mt-5 text-[2.65rem] sm:text-6xl xl:text-[4.5rem] leading-[.92] font-medium tracking-[-.075em]" style={{ color: theme.id === 'paper' ? '#C4BEB4' : theme.textMuted }}>
               Sit down.
               <br />
-              <span style={{ color: theme.accent }}>Think ahead.</span>
+              <span style={{ color: theme.textPrimary }}>Think ahead.</span>
             </h1>
             <p className="mt-5 max-w-[480px] text-sm sm:text-base leading-relaxed" style={{ color: theme.textSecondary }}>
               Pick a classic, learn its rhythm, and play solo or with a friend.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2.5">
-              <button onClick={resumeGame ? onResumeGame : browseGames} className="action-primary min-h-11 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-transform active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#fff', outlineColor: theme.accent }}>
+              <button onClick={resumeGame ? onResumeGame : browseGames} className="action-primary min-h-11 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-transform active:scale-[.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#fff', outlineColor: theme.validHighlight }}>
                 {resumeGame ? <RotateCcw className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
                 {resumeGame ? `Continue ${resumeGame.shortName}` : 'Find your game'}
               </button>
-              <button onClick={() => onOpenMultiplayer('online')} className="action-secondary min-h-11 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.accent }}>
+              <button onClick={() => onOpenMultiplayer('online')} className="action-secondary min-h-11 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}>
                 <Globe2 className="w-4 h-4" />
                 Invite a friend
               </button>
@@ -82,7 +82,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
 
           <div className="relative mt-7 lg:mt-0 mx-auto w-full max-w-[500px]">
             <div className="hero-orbit" aria-hidden="true" style={{ borderColor: `${theme.accent}35` }} />
-            <div className="hero-board-frame relative mx-auto w-full max-w-[440px] p-2.5 sm:p-3.5" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+            <div className="hero-board-frame relative mx-auto w-full max-w-[440px] p-2.5 sm:p-3.5" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
               <GameArtwork gameId={MARKED_GAME} theme={theme} className="w-full h-auto rounded-[18px]" />
               <div className="absolute left-5 top-5 sm:left-7 sm:top-7 flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[10px] font-bold tracking-[.08em] shadow-lg" style={{ backgroundColor: theme.bgSurface, color: theme.accent, border: `1px solid ${theme.border}` }}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.validHighlight }} />
@@ -103,13 +103,13 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
             <h2 id="library-title" className="display-face text-2xl sm:text-[2rem] font-bold tracking-[-.05em]" style={{ color: theme.textPrimary }}>Choose what to play</h2>
             <p className="text-sm mt-1.5" style={{ color: theme.textMuted }}>Each board has its own rhythm. Pick one and get started.</p>
           </div>
-          <div className="filter-control inline-flex self-start sm:self-auto gap-1 p-1 rounded-xl" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} role="group" aria-label="Filter games">
+          <div className="filter-control inline-flex self-start sm:self-auto gap-1 p-1 rounded-full" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} role="group" aria-label="Filter games">
             {([
               { id: 'all', label: `All ${GAMES.length}` },
               { id: 'morris', label: 'Morris' },
               { id: 'classic', label: 'Classics' },
             ] as const).map((item) => (
-              <button key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id} className="min-h-11 rounded-lg px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: filter === item.id ? theme.accent : 'transparent', color: filter === item.id ? theme.bgApp : theme.textMuted, outlineColor: theme.accent }}>
+              <button key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id} className="min-h-11 rounded-full px-4 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: filter === item.id ? theme.accent : 'transparent', color: filter === item.id ? theme.bgSurface : theme.textMuted, outlineColor: theme.validHighlight }}>
                 {item.label}
               </button>
             ))}
@@ -118,7 +118,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
 
         <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
           {visibleGames.map((game, index) => (
-            <article key={game.id} className="game-card group relative overflow-hidden rounded-[20px] transition-all duration-200" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}`, animationDelay: `${index * 35}ms` }}>
+            <article key={game.id} className="game-card group relative overflow-hidden rounded-[24px] transition-all duration-200" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}`, animationDelay: `${index * 35}ms` }}>
               <div className="game-art relative p-2.5 pb-0">
                 <GameArtwork gameId={game.id} theme={theme} className="block w-full h-[126px] sm:h-[132px] rounded-[15px]" />
                 <span className="absolute left-5 top-4 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: theme.bgApp, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
@@ -132,9 +132,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
                 <h3 className="display-face text-[1.08rem] font-bold tracking-[-.035em]" style={{ color: theme.textPrimary }}>{game.name}</h3>
                 <p className="mt-1.5 min-h-[36px] text-xs leading-relaxed" style={{ color: theme.textSecondary }}>{game.tagline}</p>
                 <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
-                  <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.bgApp, outlineColor: theme.accent }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>
-                  <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.accent }}><Users2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">2P</span></button>
-                  <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-lg focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.accent }}><Globe2 className="w-4 h-4" /></button>
+                  <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.bgSurface, outlineColor: theme.validHighlight }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>
+                  <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Users2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">2P</span></button>
+                  <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Globe2 className="w-4 h-4" /></button>
                 </div>
               </div>
             </article>
@@ -142,12 +142,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
         </div>
       </section>
 
-      <section className="local-play-callout mt-7 sm:mt-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl px-4 sm:px-5 py-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+      <section className="local-play-callout mt-7 sm:mt-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[24px] px-4 sm:px-5 py-4" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ color: theme.accent, backgroundColor: theme.accentSoft }}><Wifi className="w-4 h-4" /></div>
           <div><h3 className="text-sm font-bold" style={{ color: theme.textPrimary }}>Across the table?</h3><p className="text-xs mt-1" style={{ color: theme.textMuted }}>Pair devices on the same Wi-Fi or hotspot with an exchange code.</p></div>
         </div>
-        <button onClick={() => onOpenMultiplayer('hotspot')} className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-xl px-3.5 py-2.5 text-xs font-bold" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Wifi className="w-3.5 h-3.5" />Local pairing</button>
+        <button onClick={() => onOpenMultiplayer('hotspot')} className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-full px-5 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Wifi className="w-3.5 h-3.5" />Local pairing</button>
       </section>
     </div>
   );

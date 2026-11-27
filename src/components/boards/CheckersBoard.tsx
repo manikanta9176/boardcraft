@@ -124,8 +124,8 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
                                 : theme.p2Stroke
                         }`,
                         boxShadow: isSel
-                          ? `0 0 0 3px ${theme.accent}55, 0 4px 10px rgba(0,0,0,0.4)`
-                          : '0 2px 5px rgba(0,0,0,0.38)',
+                          ? `0 0 0 3px ${theme.accent}55, 0 4px 10px rgba(0,0,0,${theme.isDark ? 0.36 : 0.14})`
+                          : `0 2px 5px rgba(0,0,0,${theme.isDark ? 0.34 : 0.14})`,
                         transform: isSel ? 'scale(1.08)' : 'scale(1)',
                       }}
                     >
@@ -133,7 +133,7 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
                         <Crown
                           className="w-4 h-4 sm:w-5 sm:h-5"
                           style={{
-                            color: piece.player === 1 ? theme.p1Stroke : '#FFFFFF',
+                            color: theme.isDark && piece.player === 1 ? theme.bgBoard : theme.bgSurface,
                           }}
                         />
                       ) : (

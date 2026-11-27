@@ -36,7 +36,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
                 top: `calc(50% + ${oy * 0.45}%)`,
                 transform: 'translate(-50%, -50%)',
                 backgroundColor: i % 2 === 0 ? ownerColor : theme.accent,
-                boxShadow: '0 1px 2px rgba(0,0,0,0.45)',
+                boxShadow: `0 1px 2px rgba(0,0,0,${theme.isDark ? 0.42 : 0.18})`,
               }}
             />
           );
@@ -66,7 +66,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             border: `2px solid ${
               canPlay ? theme.validHighlight + '88' : isLast ? theme.accent : theme.border
             }`,
-            boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.45)',
+            boxShadow: `inset 0 3px 8px rgba(0,0,0,${theme.isDark ? 0.4 : 0.1})`,
           }}
         >
           {renderSeeds(count, color, 12, isLast)}
@@ -109,7 +109,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             style={{
               backgroundColor: theme.bgBoardAlt,
               border: `2px solid ${state.turn === 2 && state.winner === null ? theme.p2Stroke : theme.border}`,
-              boxShadow: 'inset 0 3px 10px rgba(0,0,0,0.45)',
+              boxShadow: `inset 0 3px 10px rgba(0,0,0,${theme.isDark ? 0.4 : 0.12})`,
             }}
           >
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p2Color }}>
@@ -139,7 +139,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             style={{
               backgroundColor: theme.bgBoardAlt,
               border: `2px solid ${state.turn === 1 && state.winner === null ? theme.p1Stroke : theme.border}`,
-              boxShadow: 'inset 0 3px 10px rgba(0,0,0,0.45)',
+              boxShadow: `inset 0 3px 10px rgba(0,0,0,${theme.isDark ? 0.4 : 0.12})`,
             }}
           >
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p1Color }}>

@@ -33,7 +33,7 @@ interface GameHeaderProps {
   multiplayerConnected: boolean;
 }
 
-const themeOrder: ThemeId[] = ['sea-glass', 'obsidian', 'birch', 'walnut'];
+const themeOrder: ThemeId[] = ['paper', 'obsidian', 'birch', 'walnut'];
 
 export const GameHeader: React.FC<GameHeaderProps> = ({
   game,
@@ -71,7 +71,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
+          className="lg:hidden grid min-h-11 min-w-11 place-items-center rounded-full cursor-pointer"
           style={{
             backgroundColor: theme.bgSurface,
             color: theme.textPrimary,
@@ -99,11 +99,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <span>Online match</span>
           </div>
         ) : (
-          <div className="flex items-center p-0.5 rounded-lg" role="group" aria-label="Game mode" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+          <div className="flex items-center p-0.5 rounded-full" role="group" aria-label="Game mode" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
             <button
               onClick={() => onModeChange('ai')}
               aria-pressed={mode === 'ai'}
-              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-full text-xs font-medium transition-colors cursor-pointer"
               style={{ backgroundColor: mode === 'ai' ? theme.accentSoft : 'transparent', color: mode === 'ai' ? theme.accent : theme.textMuted }}
             >
               <Bot className="w-3.5 h-3.5" />
@@ -112,7 +112,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <button
               onClick={() => onModeChange('local')}
               aria-pressed={mode === 'local'}
-              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-full text-xs font-medium transition-colors cursor-pointer"
               style={{ backgroundColor: mode === 'local' ? theme.accentSoft : 'transparent', color: mode === 'local' ? theme.accent : theme.textMuted }}
             >
               <Users className="w-3.5 h-3.5" />
@@ -124,7 +124,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         {/* Difficulty Switcher (AI mode) */}
         {mode === 'ai' && (
           <div
-            className="flex items-center p-0.5 rounded-lg"
+            className="flex items-center p-0.5 rounded-full"
             role="group"
             aria-label="AI difficulty"
             style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}
@@ -134,7 +134,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
                 key={d}
                 onClick={() => onDifficultyChange(d)}
                 aria-pressed={difficulty === d}
-                className="min-h-11 px-2 rounded-md text-xs font-medium capitalize transition-colors cursor-pointer"
+                className="min-h-11 px-2 rounded-full text-xs font-medium capitalize transition-colors cursor-pointer"
                 style={{
                   backgroundColor: difficulty === d ? theme.accentSoft : 'transparent',
                   color: difficulty === d ? theme.accent : theme.textMuted,
@@ -153,7 +153,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               onClick={onOpenMultiplayer}
               aria-label="Invite a friend to play online"
               title="Invite a friend"
-              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-semibold cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-full text-xs font-semibold cursor-pointer"
               style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}
             >
               <Radio className="w-4 h-4" />
@@ -165,7 +165,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             disabled={!canUndo || multiplayerConnected}
             title="Undo Move"
             aria-label="Undo last move"
-            className="grid min-h-11 min-w-11 place-items-center rounded-lg transition-opacity cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+            className="grid min-h-11 min-w-11 place-items-center rounded-full transition-opacity cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -179,7 +179,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             disabled={!canReset}
             title="Restart Game"
             aria-label="Restart game"
-            className="grid min-h-11 min-w-11 place-items-center rounded-lg transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+            className="grid min-h-11 min-w-11 place-items-center rounded-full transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -192,7 +192,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             onClick={cycleTheme}
             title={`Theme: ${THEMES[theme.id].label}`}
             aria-label={`Change board theme. Current theme: ${theme.label}`}
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-medium cursor-pointer"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-full text-xs font-medium cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -207,7 +207,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}
             aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
             aria-pressed={soundEnabled}
-            className="grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
+            className="grid min-h-11 min-w-11 place-items-center rounded-full cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -219,7 +219,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onOpenRules}
             aria-label="Show game rules"
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-medium cursor-pointer"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-full text-xs font-medium cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textPrimary,

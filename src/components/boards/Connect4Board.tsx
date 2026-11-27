@@ -75,7 +75,7 @@ export const Connect4Board: React.FC<Connect4BoardProps> = ({
                   style={{
                     backgroundColor: colHovered ? theme.bgBoardAlt : theme.bgApp,
                     border: `1.5px solid ${win ? theme.validHighlight : theme.border}`,
-                    boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.45)',
+                    boxShadow: `inset 0 2px 6px rgba(0,0,0,${theme.isDark ? 0.42 : 0.12})`,
                   }}
                 >
                   {cell !== null && (
@@ -87,7 +87,7 @@ export const Connect4Board: React.FC<Connect4BoardProps> = ({
                         border: `2px solid ${win ? theme.validHighlight : cell === 1 ? theme.p1Stroke : theme.p2Stroke}`,
                         boxShadow: win
                           ? `0 0 0 3px ${theme.validHighlight}66`
-                          : '0 2px 6px rgba(0,0,0,0.35)',
+                          : `0 2px 6px rgba(0,0,0,${theme.isDark ? 0.32 : 0.14})`,
                       }}
                     >
                       {last && (
