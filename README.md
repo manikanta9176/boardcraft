@@ -22,9 +22,13 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
 - **Local Wi-Fi / Hotspot Pairing** with manually exchanged offer and answer codes for devices on the same network
-- **3 Curated Tabletop Themes**: Obsidian Studio, Nordic Birch, and Royal Walnut
+- **3 Curated Tabletop Themes**: Midnight Felt, Nordic Birch, and Royal Walnut
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
+- **Direct game links** at `/play/<game-id>` with browser back and forward navigation
+- **Automatic local saves** for in-progress solo and pass-and-play matches, plus theme, sound, and difficulty preferences
+
+Progress and preferences stay in versioned browser storage on the current device. Online matches are never saved locally. Use the library’s **Continue** action to resume the most recent saved match.
 
 ## Multiplayer Notes
 

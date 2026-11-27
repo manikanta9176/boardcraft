@@ -24,7 +24,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
   const renderSeeds = (count: number, ownerColor: string, maxShow = 12) => {
     const shown = Math.min(count, maxShow);
     return (
-      <div className="relative w-10 h-10 sm:w-12 sm:h-12 pointer-events-none">
+      <div className="relative aspect-square w-full max-w-8 sm:max-w-12 pointer-events-none">
         {Array.from({ length: shown }).map((_, i) => {
           const [ox, oy] = SEED_OFFSETS[i % SEED_OFFSETS.length];
           return (
@@ -57,10 +57,10 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
         onClick={() => canPlay && onSelectPit(pitIdx)}
         disabled={!canPlay}
         aria-label={`Pit ${pitIdx}, ${count} seeds`}
-        className="flex flex-col items-center gap-1.5 group cursor-pointer disabled:cursor-default"
+        className="flex min-h-11 w-full min-w-0 flex-col items-center gap-1 group cursor-pointer disabled:cursor-default"
       >
         <div
-          className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center relative transition-all duration-150 group-hover:scale-105 group-disabled:hover:scale-100"
+          className="aspect-square w-full max-w-9 sm:max-w-16 rounded-full flex items-center justify-center relative transition-all duration-150 group-hover:scale-105 group-disabled:hover:scale-100"
           style={{
             backgroundColor: theme.bgBoardAlt,
             border: `2px solid ${
@@ -102,10 +102,10 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
           <span>← {theme.p2Name} Pits</span>
         </div>
 
-        <div className="grid grid-cols-[64px_1fr_64px] sm:grid-cols-[84px_1fr_84px] gap-3 sm:gap-4 items-stretch">
+        <div className="grid min-w-0 grid-cols-[30px_minmax(0,1fr)_30px] min-[375px]:grid-cols-[36px_minmax(0,1fr)_36px] sm:grid-cols-[84px_minmax(0,1fr)_84px] gap-1 sm:gap-4 items-stretch">
           {/* P2 Store (index 13) */}
           <div
-            className="rounded-2xl flex flex-col items-center justify-between py-4 px-2"
+            className="min-w-0 rounded-xl sm:rounded-2xl flex flex-col items-center justify-between py-2 sm:py-4 px-0.5 sm:px-2"
             style={{
               backgroundColor: theme.bgBoardAlt,
               border: `2px solid ${state.turn === 2 && state.winner === null ? theme.p2Stroke : theme.border}`,
@@ -122,20 +122,20 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
           </div>
 
           {/* Center Pits Grid */}
-          <div className="flex flex-col justify-between gap-4 sm:gap-6">
+          <div className="min-w-0 flex flex-col justify-between gap-4 sm:gap-6">
             {/* P2 Top Row */}
-            <div className="grid grid-cols-6 gap-2 sm:gap-3 justify-items-center">
+            <div className="grid min-w-0 grid-cols-6 gap-0.5 sm:gap-3 justify-items-center">
               {p2TopPits.map((idx) => renderPit(idx, state.turn === 2))}
             </div>
             {/* P1 Bottom Row */}
-            <div className="grid grid-cols-6 gap-2 sm:gap-3 justify-items-center">
+            <div className="grid min-w-0 grid-cols-6 gap-0.5 sm:gap-3 justify-items-center">
               {p1BottomPits.map((idx) => renderPit(idx, state.turn === 1))}
             </div>
           </div>
 
           {/* P1 Store (index 6) */}
           <div
-            className="rounded-2xl flex flex-col items-center justify-between py-4 px-2"
+            className="min-w-0 rounded-xl sm:rounded-2xl flex flex-col items-center justify-between py-2 sm:py-4 px-0.5 sm:px-2"
             style={{
               backgroundColor: theme.bgBoardAlt,
               border: `2px solid ${state.turn === 1 && state.winner === null ? theme.p1Stroke : theme.border}`,

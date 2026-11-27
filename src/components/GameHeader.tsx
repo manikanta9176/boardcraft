@@ -71,7 +71,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onOpenMobileMenu}
-          className="lg:hidden p-2 rounded-lg cursor-pointer"
+          className="lg:hidden grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
           style={{
             backgroundColor: theme.bgSurface,
             color: theme.textPrimary,
@@ -99,10 +99,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <span>Online match</span>
           </div>
         ) : (
-          <div className="flex items-center p-0.5 rounded-lg" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+          <div className="flex items-center p-0.5 rounded-lg" role="group" aria-label="Game mode" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
             <button
               onClick={() => onModeChange('ai')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              aria-pressed={mode === 'ai'}
+              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
               style={{ backgroundColor: mode === 'ai' ? theme.accentSoft : 'transparent', color: mode === 'ai' ? theme.accent : theme.textMuted }}
             >
               <Bot className="w-3.5 h-3.5" />
@@ -110,7 +111,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             </button>
             <button
               onClick={() => onModeChange('local')}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              aria-pressed={mode === 'local'}
+              className="flex min-h-11 items-center gap-1.5 px-2.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
               style={{ backgroundColor: mode === 'local' ? theme.accentSoft : 'transparent', color: mode === 'local' ? theme.accent : theme.textMuted }}
             >
               <Users className="w-3.5 h-3.5" />
@@ -123,13 +125,16 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
         {mode === 'ai' && (
           <div
             className="flex items-center p-0.5 rounded-lg"
+            role="group"
+            aria-label="AI difficulty"
             style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}
           >
             {(['easy', 'medium', 'hard'] as Difficulty[]).map((d) => (
               <button
                 key={d}
                 onClick={() => onDifficultyChange(d)}
-                className="px-2 py-1.5 rounded-md text-xs font-medium capitalize transition-colors cursor-pointer"
+                aria-pressed={difficulty === d}
+                className="min-h-11 px-2 rounded-md text-xs font-medium capitalize transition-colors cursor-pointer"
                 style={{
                   backgroundColor: difficulty === d ? theme.accentSoft : 'transparent',
                   color: difficulty === d ? theme.accent : theme.textMuted,
@@ -148,7 +153,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
               onClick={onOpenMultiplayer}
               aria-label="Invite a friend to play online"
               title="Invite a friend"
-              className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-semibold cursor-pointer"
+              className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-semibold cursor-pointer"
               style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}
             >
               <Radio className="w-4 h-4" />
@@ -159,7 +164,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             onClick={onUndo}
             disabled={!canUndo || multiplayerConnected}
             title="Undo Move"
-            className="p-2 rounded-lg transition-opacity cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+            aria-label="Undo last move"
+            className="grid min-h-11 min-w-11 place-items-center rounded-lg transition-opacity cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -172,7 +178,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             onClick={onReset}
             disabled={!canReset}
             title="Restart Game"
-            className="p-2 rounded-lg transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+            aria-label="Restart game"
+            className="grid min-h-11 min-w-11 place-items-center rounded-lg transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -184,7 +191,8 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={cycleTheme}
             title={`Theme: ${THEMES[theme.id].label}`}
-            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer"
+            aria-label={`Change board theme. Current theme: ${theme.label}`}
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-medium cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -197,7 +205,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onToggleSound}
             title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}
-            className="p-2 rounded-lg cursor-pointer"
+            aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
+            aria-pressed={soundEnabled}
+            className="grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -209,7 +219,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <button
             onClick={onOpenRules}
             aria-label="Show game rules"
-            className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-lg text-xs font-medium cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textPrimary,

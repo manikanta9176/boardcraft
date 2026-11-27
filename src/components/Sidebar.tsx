@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X, Grid3X3, Radio } from 'lucide-react';
 import { GAMES } from '../games/registry';
 import { GameId, ThemePalette } from '../types/game';
@@ -27,8 +27,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   onCloseMobile,
 }) => {
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
   const morrisGames = GAMES.filter((g) => g.category === 'morris');
   const classicGames = GAMES.filter((g) => g.category === 'classic');
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    mobilePanelRef.current?.querySelector<HTMLElement>('button:not(:disabled)')?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseMobile();
+      }
+      if (event.key !== 'Tab' || !mobilePanelRef.current) return;
+      const items = Array.from(mobilePanelRef.current.querySelectorAll<HTMLElement>('button:not(:disabled)'));
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [mobileOpen, onCloseMobile]);
 
   const renderGroup = (title: string, items: typeof GAMES) => (
     <div className="mb-5">
@@ -49,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectGame(game.id);
                 onCloseMobile();
               }}
-              className="nav-game w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+              className="nav-game min-h-11 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: isActive ? theme.bgSurface : 'transparent',
                 color: isActive ? theme.accent : theme.textSecondary,
@@ -109,7 +143,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <button
           onClick={onCloseMobile}
-          className="lg:hidden p-1.5 rounded-lg cursor-pointer"
+            className="lg:hidden grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
           style={{ color: theme.textSecondary }}
           aria-label="Close menu"
         >
@@ -122,7 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={() => { onOpenLobby(); onCloseMobile(); }}
             aria-current={isLobby ? 'page' : undefined}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
+            className="min-h-11 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
             style={{ backgroundColor: isLobby ? theme.accentSoft : 'transparent', color: isLobby ? theme.accent : theme.textSecondary, border: `1px solid ${isLobby ? theme.accent + '40' : 'transparent'}` }}
           >
             <Grid3X3 className="w-[18px] h-[18px] shrink-0" />
@@ -130,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={() => { onOpenMultiplayer(); onCloseMobile(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
+            className="min-h-11 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
             style={{ color: theme.textSecondary, border: `1px solid transparent` }}
           >
             <Radio className="w-[18px] h-[18px] shrink-0" style={{ color: theme.validHighlight }} />
@@ -158,12 +192,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       <aside className="hidden lg:block w-64 shrink-0 h-full">{content}</aside>
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div
+        <div className="fixed inset-0 z-50 flex lg:hidden">
+          <button
+            type="button"
             className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             onClick={onCloseMobile}
+            aria-label="Close game navigation"
           />
-          <div className="relative w-72 max-w-[82vw] h-full z-10">{content}</div>
+          <div
+            ref={mobilePanelRef}
+            className="mobile-nav-panel relative z-10 h-full w-72 max-w-[82vw]"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Game navigation"
+            tabIndex={-1}
+          >
+            {content}
+          </div>
         </div>
       )}
     </>

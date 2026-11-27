@@ -1,6 +1,7 @@
 import React from 'react';
 import { Lightbulb, X } from 'lucide-react';
 import { GameMeta, ThemePalette } from '../types/game';
+import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 interface RulesModalProps {
   game: GameMeta;
@@ -9,12 +10,17 @@ interface RulesModalProps {
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ game, theme, onClose }) => {
+  const dialogRef = useModalAccessibility(onClose);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/65 backdrop-blur-xs" onClick={onClose} />
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+      <button className="fixed inset-0 bg-black/65 backdrop-blur-xs" onClick={onClose} aria-label="Close game rules" />
       <div
-        className="relative z-10 w-full max-w-lg rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto"
-        style={{
+        ref={dialogRef}
+        className="relative z-10 w-full max-w-lg rounded-2xl p-4 sm:p-6 shadow-2xl overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rules-title"
+        style={{ maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem)',
           backgroundColor: theme.bgSurface,
           border: `1px solid ${theme.border}`,
           color: theme.textPrimary,
@@ -22,15 +28,16 @@ export const RulesModal: React.FC<RulesModalProps> = ({ game, theme, onClose }) 
       >
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-lg font-bold">{game.name} — How to Play</h2>
+            <h2 id="rules-title" className="text-lg font-bold">{game.name} — How to Play</h2>
             <p className="text-xs mt-0.5" style={{ color: theme.textMuted }}>
               {game.players} • Typical game: {game.duration}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg cursor-pointer"
+            className="grid min-h-11 min-w-11 place-items-center rounded-lg cursor-pointer"
             style={{ color: theme.textMuted, backgroundColor: theme.bgBoard }}
+            aria-label="Close game rules"
           >
             <X className="w-4 h-4" />
           </button>

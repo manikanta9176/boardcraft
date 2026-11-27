@@ -10,9 +10,25 @@
   body {
     font-family: var(--font-sans);
     margin: 0;
+    min-width: 320px;
+    min-height: 100%;
+    overflow-x: clip;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-height: 100%;
+  }
+}
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
 }
 
 .display-face {
@@ -21,6 +37,7 @@
 
 .match-header {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.015);
+  padding-top: max(0.75rem, env(safe-area-inset-top));
 }
 
 .nav-game:not(:disabled):hover {
@@ -85,6 +102,30 @@
 @media (max-width: 640px) {
   .hero-caption {
     bottom: -12px;
+  }
+
+  .lobby-page {
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+
+  .match-main {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+    overscroll-behavior-y: contain;
+  }
+
+  .mobile-nav-panel {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .modal-backdrop {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-toast {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
   }
 }
 

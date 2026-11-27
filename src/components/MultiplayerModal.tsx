@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Check,
   Copy,
@@ -14,6 +14,7 @@ import {
 import { ConnectionPhase, TransportKind, buildRoomInviteUrl, normalizeRoomCode } from '../multiplayer/types';
 import { ThemePalette } from '../types/game';
 import { QrCodeBox } from './QrCodeBox';
+import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 interface MultiplayerModalProps {
   theme: ThemePalette;
@@ -52,20 +53,13 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   onJoinHotspotOffer,
   onResetConnection,
 }) => {
+  const dialogRef = useModalAccessibility(onClose);
   const [tab, setTab] = useState<'online' | 'hotspot'>(initialTab);
   const [joinInput, setJoinInput] = useState(initialJoinCode);
   const [hotspotSubMode, setHotspotSubMode] = useState<'host' | 'guest'>('host');
   const [offerInput, setOfferInput] = useState('');
   const [answerInput, setAnswerInput] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
 
   const inviteUrl = roomCode ? buildRoomInviteUrl(roomCode) : '';
 
@@ -91,15 +85,17 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   const isBusy = phase === 'initializing' || phase === 'connecting';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
       <div
-        className="relative z-10 w-full max-w-xl rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-pop-in"
+        ref={dialogRef}
+        className="relative z-10 w-full max-w-xl rounded-3xl p-4 sm:p-6 shadow-2xl overflow-y-auto animate-pop-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="multiplayer-title"
         aria-describedby="multiplayer-description"
         style={{
+          maxHeight: 'calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem)',
           backgroundColor: theme.bgSurface,
           border: `1px solid ${theme.border}`,
           color: theme.textPrimary,

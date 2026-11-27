@@ -4,6 +4,7 @@ import { GameOverBanner } from './components/GameOverBanner';
 import { ConfettiBurst } from './components/ConfettiBurst';
 import { LobbyView } from './components/LobbyView';
 import { MultiplayerModal } from './components/MultiplayerModal';
+import { NotFoundView } from './components/NotFoundView';
 import { OnlineBar } from './components/OnlineBar';
 import { PlayerBar } from './components/PlayerBar';
 import { RulesModal } from './components/RulesModal';
@@ -56,7 +57,7 @@ import {
   countPiecesOnBoard,
   createInitialMorrisState,
 } from './games/morris/engine';
-import { MorrisVariantId } from './games/morris/topologies';
+import { MORRIS_TOPOLOGIES, MorrisVariantId } from './games/morris/topologies';
 import { GAMES } from './games/registry';
 import {
   ReversiState,
@@ -77,6 +78,8 @@ import {
   generateRoomCode,
   normalizeRoomCode,
 } from './multiplayer/types';
+import { loadMostRecentSavedGame, loadPreferences, loadSavedMatch, removeSavedMatch, saveMatch, savePreferences, SavedMatch } from './utils/persistence';
+import { parseBoardCraftRoute, writeBoardCraftRoute } from './utils/routing';
 
 type AnyGameState =
   | { kind: 'morris'; data: MorrisState }
@@ -123,39 +126,110 @@ function isAnyGameState(value: unknown): value is AnyGameState {
   const candidate = value as { kind?: unknown; data?: { turn?: unknown; winner?: unknown } };
   return (
     ['morris', 'connect4', 'reversi', 'checkers', 'mancala', 'gomoku', 'dots-and-boxes'].includes(String(candidate.kind)) &&
-    !!candidate.data &&
+    !!candidate.data && typeof candidate.data === 'object' && !Array.isArray(candidate.data) &&
     (candidate.data.turn === 1 || candidate.data.turn === 2) &&
     (candidate.data.winner === null || candidate.data.winner === 1 || candidate.data.winner === 2 || candidate.data.winner === 'draw')
   );
 }
 
-export function App() {
-  const [activeGameId, setActiveGameId] = useState<GameId>('nine-mens-morris');
-  const [mode, setMode] = useState<GameMode>('ai');
-  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
-  const [themeId, setThemeId] = useState<ThemeId>(() => {
-    const saved = localStorage.getItem('boardcraft-theme') as ThemeId | null;
-    return saved && THEMES[saved] ? saved : 'obsidian';
-  });
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('boardcraft-sound');
-    return saved === null ? true : saved === 'true';
-  });
+function isCell(value: unknown): boolean {
+  return value === null || value === 1 || value === 2;
+}
 
-  const [gameState, setGameState] = useState<AnyGameState>(() =>
-    createInitialGameState('nine-mens-morris'),
+function isGrid(value: unknown, rows: number, columns: number, validCell: (cell: unknown) => boolean = isCell): boolean {
+  return Array.isArray(value) && value.length === rows && value.every((row) =>
+    Array.isArray(row) && row.length === columns && row.every(validCell),
   );
-  const [history, setHistory] = useState<AnyGameState[]>([]);
+}
+
+function isValidStateForGame(gameId: GameId, value: unknown): value is AnyGameState {
+  if (!isAnyGameState(value)) return false;
+  const initial = createInitialGameState(gameId);
+  if (value.kind !== initial.kind) return false;
+
+  switch (value.kind) {
+    case 'morris':
+      return value.data.variant === gameId &&
+        Array.isArray(value.data.board) && value.data.board.length === MORRIS_TOPOLOGIES[gameId as MorrisVariantId].nodes.length &&
+        value.data.board.every(isCell) &&
+        ['placement', 'movement', 'capture', 'gameover'].includes(value.data.phase) &&
+        typeof value.data.statusText === 'string' &&
+        !!value.data.toPlace && !!value.data.captured &&
+        [1, 2].every((player) => Number.isInteger(value.data.toPlace[player as Player]) && value.data.toPlace[player as Player] >= 0);
+    case 'connect4':
+      return isGrid(value.data.board, 6, 7) && (value.data.winningCells === null || Array.isArray(value.data.winningCells));
+    case 'reversi':
+      return isGrid(value.data.board, 8, 8) && Array.isArray(value.data.flippedCells) && typeof value.data.passedTurn === 'boolean';
+    case 'checkers':
+      return isGrid(value.data.board, 8, 8, (cell) => cell === null || (!!cell && typeof cell === 'object' &&
+        ((cell as { player?: unknown }).player === 1 || (cell as { player?: unknown }).player === 2) &&
+        typeof (cell as { king?: unknown }).king === 'boolean'));
+    case 'mancala':
+      return Array.isArray(value.data.pits) && value.data.pits.length === 14 && value.data.pits.every((pit) => Number.isInteger(pit) && pit >= 0) &&
+        typeof value.data.extraTurn === 'boolean' && typeof value.data.lastCaptured === 'boolean';
+    case 'gomoku':
+      return isGrid(value.data.board, 15, 15) && Number.isInteger(value.data.moveCount) && value.data.moveCount >= 0;
+    case 'dots-and-boxes':
+      return isGrid(value.data.hEdges, 5, 4) && isGrid(value.data.vEdges, 4, 5) && isGrid(value.data.boxes, 4, 4) &&
+        !!value.data.scores &&
+        Number.isInteger(value.data.scores[1]) && Number.isInteger(value.data.scores[2]);
+  }
+}
+
+function restoreSavedMatch(gameId: GameId): (SavedMatch & { state: AnyGameState; history: AnyGameState[] }) | null {
+  const saved = loadSavedMatch(gameId);
+  if (!saved) return null;
+  const validHistory = saved.history.length <= 80 && saved.history.every((state) => isValidStateForGame(gameId, state));
+  if (!validHistory || !isValidStateForGame(gameId, saved.state)) {
+    removeSavedMatch(gameId);
+    return null;
+  }
+  return { ...saved, state: saved.state, history: saved.history as AnyGameState[] };
+}
+
+function getBootState() {
+  const route = parseBoardCraftRoute(window.location.pathname, window.location.search);
+  const preferences = loadPreferences();
+  const activeGameId = route.screen === 'game'
+    ? route.gameId
+    : preferences.lastGameId ?? 'nine-mens-morris';
+  const savedMatch = restoreSavedMatch(activeGameId);
+  const resumeCandidateId = preferences.lastGameId ?? loadMostRecentSavedGame();
+  const resumeCandidate = resumeCandidateId
+    ? resumeCandidateId === activeGameId
+      ? savedMatch
+      : restoreSavedMatch(resumeCandidateId)
+    : null;
+  const resumeGameId = resumeCandidate ? resumeCandidateId : savedMatch ? activeGameId : null;
+  return { route, preferences, activeGameId, savedMatch, resumeGameId };
+}
+
+export function App() {
+  const [boot] = useState(getBootState);
+  const initialMode = boot.route.screen === 'game' && boot.route.mode
+    ? boot.route.mode
+    : boot.savedMatch?.mode ?? 'ai';
+  const [activeGameId, setActiveGameId] = useState<GameId>(boot.activeGameId);
+  const [mode, setMode] = useState<GameMode>(initialMode);
+  const [difficulty, setDifficulty] = useState<Difficulty>(boot.savedMatch?.difficulty ?? boot.preferences.difficulty);
+  const [themeId, setThemeId] = useState<ThemeId>(boot.preferences.themeId);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(boot.preferences.soundEnabled);
+
+  const [gameState, setGameState] = useState<AnyGameState>(boot.savedMatch?.state ?? createInitialGameState(boot.activeGameId));
+  const [history, setHistory] = useState<AnyGameState[]>(boot.savedMatch?.history ?? []);
   const [checkersSelected, setCheckersSelected] = useState<[number, number] | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [aiThinking, setAiThinking] = useState(false);
-  const [showLobby, setShowLobby] = useState(true);
+  const [showLobby, setShowLobby] = useState(boot.route.screen !== 'game');
+  const [notFoundPath, setNotFoundPath] = useState(boot.route.screen === 'not-found' ? boot.route.path : null);
+  const [resumeGameId, setResumeGameId] = useState<GameId | null>(boot.resumeGameId);
+  const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [multiplayerOpen, setMultiplayerOpen] = useState(false);
   const [multiplayerTab, setMultiplayerTab] = useState<'online' | 'hotspot'>('online');
   const [connectionPhase, setConnectionPhase] = useState<ConnectionPhase>('idle');
   const [transportKind, setTransportKind] = useState<TransportKind | null>(null);
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(boot.route.roomCode ?? '');
   const [hotspotOfferCode, setHotspotOfferCode] = useState('');
   const [hotspotAnswerCode, setHotspotAnswerCode] = useState('');
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -163,11 +237,12 @@ export function App() {
   const [hostPlayer, setHostPlayer] = useState<Player>(1);
   const [latencyMs, setLatencyMs] = useState<number | null>(null);
   const [reactionToast, setReactionToast] = useState<string | null>(null);
-  const [inviteJoinCode] = useState(() => normalizeRoomCode(new URLSearchParams(window.location.search).get('room') ?? ''));
+  const [inviteJoinCode, setInviteJoinCode] = useState(boot.route.roomCode ?? '');
 
   const aiTimerRef = useRef<number | null>(null);
   const transportRef = useRef<ActiveTransport | null>(null);
   const hotspotHostRef = useRef<HotspotHostSession | null>(null);
+  const roomCodeRef = useRef(boot.route.roomCode ?? '');
   const gameStateRef = useRef(gameState);
   const activeGameIdRef = useRef(activeGameId);
   const hostPlayerRef = useRef<Player>(hostPlayer);
@@ -183,13 +258,42 @@ export function App() {
   );
 
   useEffect(() => {
-    localStorage.setItem('boardcraft-theme', themeId);
-  }, [themeId]);
+    document.title = notFoundPath
+      ? 'Game not found — BoardCraft'
+      : showLobby
+        ? 'BoardCraft — Classic Strategy, Morris & Online Multiplayer'
+        : `${activeMeta.name} — BoardCraft`;
+  }, [activeMeta.name, notFoundPath, showLobby]);
 
   useEffect(() => {
     sound.enabled = soundEnabled;
-    localStorage.setItem('boardcraft-sound', String(soundEnabled));
   }, [soundEnabled]);
+
+  useEffect(() => {
+    if (!savePreferences({ themeId, soundEnabled, difficulty, lastGameId: resumeGameId })) {
+      setStorageUnavailable(true);
+    } else setStorageUnavailable(false);
+  }, [themeId, soundEnabled, difficulty, resumeGameId]);
+
+  useEffect(() => {
+    if (showLobby || mode === 'online') return;
+    if (history.length === 0) {
+      removeSavedMatch(activeGameId);
+      setResumeGameId((current) => current === activeGameId ? loadMostRecentSavedGame() : current);
+      return;
+    }
+    const saved = saveMatch(activeGameId, {
+      state: gameState,
+      history,
+      mode,
+      difficulty,
+    });
+    if (saved) {
+      setResumeGameId(activeGameId);
+      setStorageUnavailable(false);
+    }
+    else setStorageUnavailable(true);
+  }, [activeGameId, difficulty, gameState, history, mode, showLobby]);
 
   useEffect(() => {
     if (inviteJoinCode) {
@@ -208,6 +312,14 @@ export function App() {
     transportRef.current?.send(message);
   }, []);
   const closeMultiplayer = useCallback(() => setMultiplayerOpen(false), []);
+  const closeRules = useCallback(() => setRulesOpen(false), []);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+  const openLibrary = useCallback(() => {
+    if (mode === 'online') return;
+    setShowLobby(true);
+    setNotFoundPath(null);
+    writeBoardCraftRoute({ screen: 'library' });
+  }, [mode]);
 
   const resetConnection = useCallback(() => {
     transportRef.current?.close();
@@ -216,6 +328,7 @@ export function App() {
     setConnectionPhase('idle');
     setTransportKind(null);
     setRoomCode('');
+    roomCodeRef.current = '';
     setHotspotOfferCode('');
     setHotspotAnswerCode('');
     setConnectionError(null);
@@ -232,6 +345,8 @@ export function App() {
       setConnectionError(null);
       setMode('online');
       setShowLobby(false);
+      setNotFoundPath(null);
+      writeBoardCraftRoute({ screen: 'game', gameId: activeGameIdRef.current, roomCode: roomCodeRef.current || undefined }, true);
       setMultiplayerOpen(false);
       if (host) {
         window.setTimeout(() => {
@@ -272,6 +387,8 @@ export function App() {
         setHistory([]);
         setCheckersSelected(null);
         setShowLobby(false);
+        setNotFoundPath(null);
+        writeBoardCraftRoute({ screen: 'game', gameId: message.gameId, roomCode: roomCodeRef.current || undefined }, true);
         return;
       }
       if (message.type === 'SWITCH_GAME') {
@@ -283,6 +400,8 @@ export function App() {
         setGameState(next);
         setHistory([]);
         setCheckersSelected(null);
+        setNotFoundPath(null);
+        writeBoardCraftRoute({ screen: 'game', gameId: message.gameId, roomCode: roomCodeRef.current || undefined }, true);
         return;
       }
       if (message.type === 'RESET_GAME') {
@@ -294,6 +413,8 @@ export function App() {
         setGameState(next);
         setHistory([]);
         setCheckersSelected(null);
+        setNotFoundPath(null);
+        writeBoardCraftRoute({ screen: 'game', gameId: message.gameId, roomCode: roomCodeRef.current || undefined }, true);
         return;
       }
       if (message.type === 'SWAP_SIDES') {
@@ -333,7 +454,10 @@ export function App() {
     onDisconnected: (reason) => {
       setConnectionError(reason ?? 'The other player disconnected.');
       setConnectionPhase('error');
+      setRoomCode('');
+      roomCodeRef.current = '';
       setMode((current) => current === 'online' ? 'local' : current);
+      writeBoardCraftRoute({ screen: 'game', gameId: activeGameIdRef.current, mode: 'local' }, true);
       setMultiplayerOpen(true);
     },
     onError: (message) => {
@@ -351,6 +475,8 @@ export function App() {
       setGameState(next);
       setHistory([]);
       setShowLobby(false);
+      setNotFoundPath(null);
+      writeBoardCraftRoute({ screen: 'game', gameId, mode: mode === 'local' ? 'local' : 'ai' });
     }
     setMultiplayerTab(tab);
     setMultiplayerOpen(true);
@@ -363,6 +489,7 @@ export function App() {
     setConnectionPhase('initializing');
     setTransportKind('online-room');
     setRoomCode(code);
+    roomCodeRef.current = code;
     setIsHost(true);
     setHostPlayer(1);
     hostPlayerRef.current = 1;
@@ -377,6 +504,7 @@ export function App() {
     setConnectionPhase('connecting');
     setTransportKind('online-room');
     setRoomCode(normalized);
+    roomCodeRef.current = normalized;
     setIsHost(false);
     const transport = joinOnlineRoom(normalized, createPeerCallbacks(false));
     transportRef.current = transport;
@@ -460,12 +588,74 @@ export function App() {
     [activeGameId, isHost, mode, sendNetworkMessage],
   );
 
+  const handleBrowserNavigation = useCallback(() => {
+    const route = parseBoardCraftRoute(window.location.pathname, window.location.search);
+    const nextRoomCode = route.roomCode ?? '';
+    setInviteJoinCode(nextRoomCode);
+    setRoomCode(nextRoomCode);
+    roomCodeRef.current = nextRoomCode;
+    setRulesOpen(false);
+    setMobileMenuOpen(false);
+
+    if (route.screen === 'game') {
+      if (mode === 'online') resetConnection();
+      const saved = restoreSavedMatch(route.gameId);
+      const nextState = saved?.state ?? createInitialGameState(route.gameId);
+      const nextMode = route.mode ?? saved?.mode ?? (mode === 'online' ? 'local' : 'ai');
+      setActiveGameId(route.gameId);
+      activeGameIdRef.current = route.gameId;
+      setMode(nextMode);
+      setDifficulty(saved?.difficulty ?? loadPreferences().difficulty);
+      setGameState(nextState);
+      gameStateRef.current = nextState;
+      setHistory(saved?.history ?? []);
+      setResumeGameId((current) => saved ? route.gameId : current === route.gameId ? null : current);
+      setCheckersSelected(null);
+      setNotFoundPath(null);
+      setShowLobby(false);
+      setMultiplayerOpen(Boolean(route.roomCode));
+      if (route.roomCode) setMultiplayerTab('online');
+      return;
+    }
+
+    if (mode === 'online') resetConnection();
+    setShowLobby(true);
+    setNotFoundPath(route.screen === 'not-found' ? route.path : null);
+    setMultiplayerOpen(false);
+  }, [mode, resetConnection]);
+
+  useEffect(() => {
+    window.addEventListener('popstate', handleBrowserNavigation);
+    return () => window.removeEventListener('popstate', handleBrowserNavigation);
+  }, [handleBrowserNavigation]);
+
   const handleSelectGame = (id: GameId) => {
     if (mode === 'online' && !isHost) return;
+    const saved = mode === 'online' ? null : restoreSavedMatch(id);
+    const nextMode = saved?.mode ?? mode;
     setActiveGameId(id);
     activeGameIdRef.current = id;
+    if (saved) {
+      if (aiTimerRef.current !== null) window.clearTimeout(aiTimerRef.current);
+      aiTimerRef.current = null;
+      setAiThinking(false);
+      setMode(saved.mode);
+      setDifficulty(saved.difficulty);
+      setGameState(saved.state);
+      gameStateRef.current = saved.state;
+      setHistory(saved.history);
+      setResumeGameId(id);
+      setCheckersSelected(null);
+    }
     setShowLobby(false);
-    resetGame(id, mode !== 'online');
+    setNotFoundPath(null);
+    writeBoardCraftRoute({
+      screen: 'game',
+      gameId: id,
+      mode: nextMode === 'ai' || nextMode === 'local' ? nextMode : undefined,
+      roomCode: mode === 'online' ? roomCodeRef.current || undefined : undefined,
+    });
+    if (!saved) resetGame(id, mode !== 'online');
     if (mode === 'online') sendNetworkMessage({ type: 'SWITCH_GAME', gameId: id });
   };
 
@@ -478,6 +668,8 @@ export function App() {
     if (connectionPhase === 'connected') resetConnection();
     setMode(nextMode);
     setShowLobby(false);
+    setNotFoundPath(null);
+    writeBoardCraftRoute({ screen: 'game', gameId: activeGameId, mode: nextMode });
     resetGame(activeGameId);
   };
 
@@ -706,8 +898,8 @@ export function App() {
         const on1 = countPiecesOnBoard(s.board, 1);
         const on2 = countPiecesOnBoard(s.board, 2);
         return {
-          p1Metric: `Board: ${on1} • Reserve: ${s.toPlace[1]}`,
-          p2Metric: `Board: ${on2} • Reserve: ${s.toPlace[2]}`,
+          p1Metric: `Board ${on1} · Reserve ${s.toPlace[1]}`,
+          p2Metric: `Board ${on2} · Reserve ${s.toPlace[2]}`,
           statusHint: s.statusText,
           gameOverSubtitle: s.statusText,
         };
@@ -803,7 +995,29 @@ export function App() {
     activeGameIdRef.current = id;
     setMode(nextMode);
     setShowLobby(false);
+    setNotFoundPath(null);
+    writeBoardCraftRoute({ screen: 'game', gameId: id, mode: nextMode });
     resetGame(id, false);
+  };
+
+  const resumeLastGame = () => {
+    if (!resumeGameId) return;
+    const saved = restoreSavedMatch(resumeGameId);
+    if (!saved) {
+      setResumeGameId(null);
+      return;
+    }
+    setActiveGameId(resumeGameId);
+    activeGameIdRef.current = resumeGameId;
+    setMode(saved.mode);
+    setDifficulty(saved.difficulty);
+    setGameState(saved.state);
+    gameStateRef.current = saved.state;
+    setHistory(saved.history);
+    setCheckersSelected(null);
+    setShowLobby(false);
+    setNotFoundPath(null);
+    writeBoardCraftRoute({ screen: 'game', gameId: resumeGameId, mode: saved.mode });
   };
 
   const playAgain = () => {
@@ -812,6 +1026,12 @@ export function App() {
       return;
     }
     resetGame(activeGameId);
+  };
+
+  const disconnectOnline = () => {
+    resetConnection();
+    setMode('local');
+    writeBoardCraftRoute({ screen: 'game', gameId: activeGameId, mode: 'local' }, true);
   };
 
   const swapSides = () => {
@@ -824,25 +1044,37 @@ export function App() {
 
   return (
     <div
-      className="h-screen w-screen flex overflow-hidden transition-colors duration-200"
+      className="app-shell flex w-full overflow-hidden transition-colors duration-200"
       style={{ backgroundColor: theme.bgApp, color: theme.textPrimary }}
     >
       <Sidebar
         activeGame={activeGameId}
         onSelectGame={handleSelectGame}
-        onOpenLobby={() => { if (mode !== 'online') setShowLobby(true); }}
+        onOpenLobby={openLibrary}
         onOpenMultiplayer={() => openMultiplayer('online')}
         isLobby={showLobby}
         gameSelectionDisabled={onlineConnected && !isHost}
         theme={theme}
         mobileOpen={mobileMenuOpen}
-        onCloseMobile={() => setMobileMenuOpen(false)}
+        onCloseMobile={closeMobileMenu}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         {showLobby ? (
           <main className="flex-1 overflow-y-auto">
-            <LobbyView theme={theme} onLaunchGame={launchGame} onOpenMultiplayer={openMultiplayer} onOpenMenu={() => setMobileMenuOpen(true)} />
+            {notFoundPath ? (
+              <NotFoundView path={notFoundPath} theme={theme} onGoHome={openLibrary} />
+            ) : (
+              <LobbyView
+                theme={theme}
+                onLaunchGame={launchGame}
+                onOpenMultiplayer={openMultiplayer}
+                onOpenMenu={() => setMobileMenuOpen(true)}
+                resumeGameId={resumeGameId}
+                onResumeGame={resumeLastGame}
+                storageUnavailable={storageUnavailable}
+              />
+            )}
           </main>
         ) : (
           <>
@@ -866,7 +1098,7 @@ export function App() {
               multiplayerConnected={onlineConnected}
             />
 
-            <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col items-center gap-4">
+            <main className="match-main flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col items-center gap-4">
               {onlineConnected && (
                 <OnlineBar
                   theme={theme}
@@ -877,7 +1109,7 @@ export function App() {
                   latencyMs={latencyMs}
                   onSwapSides={swapSides}
                   onSendReaction={(emoji, label) => sendNetworkMessage({ type: 'REACTION', emoji, label })}
-                  onDisconnect={resetConnection}
+                  onDisconnect={disconnectOnline}
                 />
               )}
 
@@ -938,7 +1170,7 @@ export function App() {
         <RulesModal
           game={activeMeta}
           theme={theme}
-          onClose={() => setRulesOpen(false)}
+          onClose={closeRules}
         />
       )}
 
@@ -964,7 +1196,7 @@ export function App() {
       )}
 
       {reactionToast && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-base font-semibold shadow-xl animate-float-up" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }} aria-live="polite">
+        <div className="safe-toast fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-base font-semibold shadow-xl animate-float-up" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }} aria-live="polite">
           {reactionToast}
         </div>
       )}

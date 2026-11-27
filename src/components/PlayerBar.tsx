@@ -39,10 +39,11 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   const isP2Active = winner === null && turn === 2;
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-2">
+    <div className="w-full max-w-2xl mx-auto flex flex-col gap-2" aria-live="polite">
       <div className="grid grid-cols-2 gap-3">
         {/* Player 1 Card */}
         <div
+          aria-current={isP1Active ? 'true' : undefined}
           className="px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 transition-all duration-200"
           style={{
             backgroundColor: theme.bgSurface,
@@ -62,23 +63,25 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
               <div className="text-xs sm:text-sm font-semibold truncate" style={{ color: theme.textPrimary }}>
                 {p1Label}
               </div>
-              <div className="text-[11px] font-mono" style={{ color: theme.textMuted }}>
+              <div className="truncate whitespace-nowrap text-[10px] sm:text-[11px] font-mono" style={{ color: theme.textMuted }}>
                 {p1Metric}
               </div>
             </div>
           </div>
           {isP1Active && (
             <span
-              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+              className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
               style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
             >
               Turn
             </span>
           )}
+          {isP1Active && <span className="sr-only">Current turn</span>}
         </div>
 
         {/* Player 2 Card */}
         <div
+          aria-current={isP2Active ? 'true' : undefined}
           className="px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 transition-all duration-200"
           style={{
             backgroundColor: theme.bgSurface,
@@ -98,19 +101,20 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
               <div className="text-xs sm:text-sm font-semibold truncate" style={{ color: theme.textPrimary }}>
                 {p2Label}
               </div>
-              <div className="text-[11px] font-mono" style={{ color: theme.textMuted }}>
+              <div className="truncate whitespace-nowrap text-[10px] sm:text-[11px] font-mono" style={{ color: theme.textMuted }}>
                 {p2Metric}
               </div>
             </div>
           </div>
           {isP2Active && (
             <span
-              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
+              className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
               style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
             >
               {aiThinking ? 'Thinking…' : 'Turn'}
             </span>
           )}
+          {isP2Active && <span className="sr-only">{aiThinking ? 'AI is thinking' : 'Current turn'}</span>}
         </div>
       </div>
 
