@@ -79,6 +79,7 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
               const isLast =
                 (state.lastMove?.from[0] === r && state.lastMove?.from[1] === c) ||
                 (state.lastMove?.to[0] === r && state.lastMove?.to[1] === c);
+              const isLastDestination = state.lastMove?.to[0] === r && state.lastMove?.to[1] === c;
 
               return (
                 <button
@@ -104,8 +105,14 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
 
                   {piece && (
                     <div
-                      className="w-[76%] h-[76%] rounded-full flex items-center justify-center transition-transform duration-150"
+                      className={`w-[76%] h-[76%] rounded-full flex items-center justify-center transition-transform duration-150 ${isLastDestination ? 'animate-piece-slide' : ''}`}
                       style={{
+                        ...(isLastDestination && state.lastMove
+                          ? {
+                            '--move-x': `${(state.lastMove.from[1] - c) * 131.58}%`,
+                            '--move-y': `${(state.lastMove.from[0] - r) * 131.58}%`,
+                          }
+                          : {}),
                         backgroundColor: piece.player === 1 ? theme.p1Color : theme.p2Color,
                         border: `2.5px solid ${
                           isSel

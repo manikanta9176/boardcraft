@@ -33,7 +33,7 @@ interface GameHeaderProps {
   multiplayerConnected: boolean;
 }
 
-const themeOrder: ThemeId[] = ['obsidian', 'birch', 'walnut'];
+const themeOrder: ThemeId[] = ['sea-glass', 'obsidian', 'birch', 'walnut'];
 
 export const GameHeader: React.FC<GameHeaderProps> = ({
   game,

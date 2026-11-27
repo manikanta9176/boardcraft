@@ -63,7 +63,7 @@ export const ReversiBoard: React.FC<ReversiBoardProps> = ({
                   {cell !== null ? (
                     <div
                       className={`w-[78%] h-[78%] rounded-full flex items-center justify-center transition-all duration-300 ${
-                        flipped || last ? 'animate-pop-in' : ''
+                        flipped ? 'animate-disc-flip' : last ? 'animate-piece-enter' : ''
                       }`}
                       style={{
                         backgroundColor: cell === 1 ? theme.p1Color : theme.p2Color,

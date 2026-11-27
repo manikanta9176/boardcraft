@@ -1,7 +1,7 @@
 export type Player = 1 | 2;
 export type GameMode = 'ai' | 'local' | 'online';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type ThemeId = 'obsidian' | 'birch' | 'walnut';
+export type ThemeId = 'sea-glass' | 'obsidian' | 'birch' | 'walnut';
 
 export type GameId =
   | 'three-mens-morris'
@@ -68,6 +68,36 @@ export interface ThemePalette {
 }
 
 export const THEMES: Record<ThemeId, ThemePalette> = {
+  'sea-glass': {
+    id: 'sea-glass',
+    label: 'Sea Glass',
+    bgApp: '#EEF5F3',
+    bgSidebar: '#E4EFEC',
+    bgSurface: '#FBFDFC',
+    bgSurfaceHover: '#E7F1EE',
+    bgGlass: 'rgba(248, 252, 250, 0.88)',
+    bgBoard: '#D8E8E3',
+    bgBoardAlt: '#C1D8D1',
+    border: 'rgba(34, 72, 68, 0.14)',
+    textPrimary: '#173B3A',
+    textSecondary: '#3D625E',
+    textMuted: '#6F8D87',
+    boardLine: '#769B92',
+    boardNode: '#BCD2CB',
+    p1Color: '#FFF3D8',
+    p1Stroke: '#B69D6F',
+    p1Glow: 'rgba(182, 157, 111, 0.3)',
+    p1Name: 'Sand',
+    p2Color: '#D98773',
+    p2Stroke: '#B96353',
+    p2Glow: 'rgba(217, 135, 115, 0.3)',
+    p2Name: 'Coral',
+    accent: '#247C72',
+    accentSoft: 'rgba(36, 124, 114, 0.12)',
+    validHighlight: '#238A74',
+    captureHighlight: '#C26055',
+    isDark: false,
+  },
   obsidian: {
     id: 'obsidian',
     label: 'Midnight Felt',

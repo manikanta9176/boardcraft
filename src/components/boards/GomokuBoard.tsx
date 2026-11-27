@@ -128,7 +128,7 @@ export const GomokuBoard: React.FC<GomokuBoardProps> = ({
                   )}
 
                   {cell !== null && (
-                    <g>
+                    <g className={last ? 'animate-piece-enter' : undefined}>
                       <circle
                         cx={coord(c)}
                         cy={coord(r)}

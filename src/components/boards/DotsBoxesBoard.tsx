@@ -41,8 +41,9 @@ export const DotsBoxesBoard: React.FC<DotsBoxesBoardProps> = ({
               const owner = state.boxes[r][c];
               if (!owner) return null;
               const color = owner === 1 ? theme.p1Color : theme.p2Color;
+              const lastClaimed = state.lastClaimedBoxes.some(([br, bc]) => br === r && bc === c);
               return (
-                <g key={`box-${r}-${c}`}>
+                <g key={`box-${r}-${c}`} className={lastClaimed ? 'animate-box-claim' : undefined}>
                   <rect
                     x={pos(c) + 1.4}
                     y={pos(r) + 1.4}
@@ -88,6 +89,7 @@ export const DotsBoxesBoard: React.FC<DotsBoxesBoardProps> = ({
                   <rect x={pos(c) + 2} y={pos(r) - 4} width={step - 4} height={8} fill="transparent" />
                   {/* Guide line */}
                   <line
+                    className={owner && last ? 'animate-edge-draw' : undefined}
                     x1={pos(c)}
                     y1={pos(r)}
                     x2={pos(c + 1)}
@@ -132,6 +134,7 @@ export const DotsBoxesBoard: React.FC<DotsBoxesBoardProps> = ({
                   {/* Wide hit box */}
                   <rect x={pos(c) - 4} y={pos(r) + 2} width={8} height={step - 4} fill="transparent" />
                   <line
+                    className={owner && last ? 'animate-edge-draw' : undefined}
                     x1={pos(c)}
                     y1={pos(r)}
                     x2={pos(c)}

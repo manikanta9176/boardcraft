@@ -28,6 +28,11 @@ describe('BoardCraft browser persistence', () => {
     });
   });
 
+  it('persists the new Sea Glass theme preference', () => {
+    expect(persistence.savePreferences({ themeId: 'sea-glass', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(true);
+    expect(persistence.loadPreferences().themeId).toBe('sea-glass');
+  });
+
   it('stores a minimal, versioned match and clears it when restarted', () => {
     const match = {
       state: { kind: 'connect4', data: { turn: 2 } },
@@ -50,7 +55,7 @@ describe('BoardCraft browser persistence', () => {
     values.set('boardcraft:matches:v1', JSON.stringify({ version: 1, matches: { connect4: { state: null } } }));
     vi.resetModules();
     return import('../persistence').then(({ loadPreferences, loadSavedMatch }) => {
-      expect(loadPreferences().themeId).toBe('obsidian');
+      expect(loadPreferences().themeId).toBe('sea-glass');
       expect(loadSavedMatch('connect4')).toBeNull();
     });
   });

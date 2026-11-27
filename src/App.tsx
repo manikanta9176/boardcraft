@@ -7,6 +7,7 @@ import { MultiplayerModal } from './components/MultiplayerModal';
 import { NotFoundView } from './components/NotFoundView';
 import { OnlineBar } from './components/OnlineBar';
 import { PlayerBar } from './components/PlayerBar';
+import type { PlayerMetric } from './components/PlayerBar';
 import { RulesModal } from './components/RulesModal';
 import { Sidebar } from './components/Sidebar';
 import { CheckersBoard } from './components/boards/CheckersBoard';
@@ -898,8 +899,8 @@ export function App() {
         const on1 = countPiecesOnBoard(s.board, 1);
         const on2 = countPiecesOnBoard(s.board, 2);
         return {
-          p1Metric: `Board ${on1} · Reserve ${s.toPlace[1]}`,
-          p2Metric: `Board ${on2} · Reserve ${s.toPlace[2]}`,
+          p1Metric: { value: String(on1), label: 'on board', detail: `Reserve ${s.toPlace[1]}` } satisfies PlayerMetric,
+          p2Metric: { value: String(on2), label: 'on board', detail: `Reserve ${s.toPlace[2]}` } satisfies PlayerMetric,
           statusHint: s.statusText,
           gameOverSubtitle: s.statusText,
         };
@@ -915,8 +916,8 @@ export function App() {
           }
         }
         return {
-          p1Metric: `${c1} discs played`,
-          p2Metric: `${c2} discs played`,
+          p1Metric: { value: String(c1), label: 'discs', detail: 'played' } satisfies PlayerMetric,
+          p2Metric: { value: String(c2), label: 'discs', detail: 'played' } satisfies PlayerMetric,
           statusHint: s.winner === null ? 'Drop a disc into any open column' : undefined,
           gameOverSubtitle: s.winner === 'draw' ? 'Board is full' : 'Aligned 4 discs in a row',
         };
@@ -925,8 +926,8 @@ export function App() {
         const s = gameState.data;
         const counts = countReversiDiscs(s.board);
         return {
-          p1Metric: `${counts[1]} discs`,
-          p2Metric: `${counts[2]} discs`,
+          p1Metric: { value: String(counts[1]), label: 'discs' } satisfies PlayerMetric,
+          p2Metric: { value: String(counts[2]), label: 'discs' } satisfies PlayerMetric,
           statusHint: s.passedTurn
             ? 'Opponent had no legal moves — turn passed!'
             : s.winner === null
@@ -939,8 +940,8 @@ export function App() {
         const s = gameState.data;
         const counts = countCheckersPieces(s.board);
         return {
-          p1Metric: `${counts[1]} pieces (${counts.kings1} Kings)`,
-          p2Metric: `${counts[2]} pieces (${counts.kings2} Kings)`,
+          p1Metric: { value: String(counts[1]), label: 'pieces', detail: `${counts.kings1} kings` } satisfies PlayerMetric,
+          p2Metric: { value: String(counts[2]), label: 'pieces', detail: `${counts.kings2} kings` } satisfies PlayerMetric,
           statusHint: s.mustContinueFrom
             ? 'Multi-jump! Continue jumping with the highlighted piece'
             : s.winner === null
@@ -952,8 +953,8 @@ export function App() {
       case 'mancala': {
         const s = gameState.data;
         return {
-          p1Metric: `Store: ${s.pits[6]}`,
-          p2Metric: `Store: ${s.pits[13]}`,
+          p1Metric: { value: String(s.pits[6]), label: 'seeds', detail: 'in store' } satisfies PlayerMetric,
+          p2Metric: { value: String(s.pits[13]), label: 'seeds', detail: 'in store' } satisfies PlayerMetric,
           statusHint: s.extraTurn
             ? 'Landed in Store — bonus turn!'
             : s.lastCaptured
@@ -967,8 +968,8 @@ export function App() {
       case 'gomoku': {
         const s = gameState.data;
         return {
-          p1Metric: `Move #${Math.ceil(s.moveCount / 2)}`,
-          p2Metric: `Move #${Math.floor(s.moveCount / 2)}`,
+          p1Metric: { value: String(Math.ceil(s.moveCount / 2)), label: 'moves', detail: 'played' } satisfies PlayerMetric,
+          p2Metric: { value: String(Math.floor(s.moveCount / 2)), label: 'moves', detail: 'played' } satisfies PlayerMetric,
           statusHint: s.winner === null ? 'Connect 5 stones in a row to win' : undefined,
           gameOverSubtitle: s.winner === 'draw' ? 'All 225 intersections filled' : '5 stones aligned',
         };
@@ -976,8 +977,8 @@ export function App() {
       case 'dots-and-boxes': {
         const s = gameState.data;
         return {
-          p1Metric: `${s.scores[1]} boxes`,
-          p2Metric: `${s.scores[2]} boxes`,
+          p1Metric: { value: String(s.scores[1]), label: 'boxes' } satisfies PlayerMetric,
+          p2Metric: { value: String(s.scores[2]), label: 'boxes' } satisfies PlayerMetric,
           statusHint:
             s.lastClaimedBoxes.length > 0 && s.winner === null
               ? `Box claimed! Bonus turn active`

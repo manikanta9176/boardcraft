@@ -221,7 +221,7 @@ export const MorrisBoard: React.FC<MorrisBoardProps> = ({
 
                 {/* Placed Piece */}
                 {owner !== null && (
-                  <g filter="url(#piece-shadow)">
+                  <g filter="url(#piece-shadow)" className={isLastTo ? 'animate-piece-enter' : undefined}>
                     {/* Selection / Capture / Win Ring */}
                     {(isSelected || isCapturable || isWinNode) && (
                       <circle

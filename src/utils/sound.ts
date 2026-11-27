@@ -17,51 +17,70 @@ class SoundEngine {
     return this.ctx;
   }
 
-  private tone(freq: number, duration: number, type: OscillatorType = 'sine', gainVal = 0.08, delay = 0) {
+  private tone(
+    freq: number,
+    duration: number,
+    type: OscillatorType = 'sine',
+    gainVal = 0.08,
+    delay = 0,
+    endFreq = freq,
+    filterCutoff = 3600,
+  ) {
     const ctx = this.getCtx();
     if (!ctx) return;
 
     const now = ctx.currentTime + delay;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
     osc.type = type;
     osc.frequency.setValueAtTime(freq, now);
+    if (endFreq !== freq) {
+      osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration * 0.82);
+    }
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(filterCutoff, now);
+    filter.Q.setValueAtTime(0.65, now);
 
     gain.gain.setValueAtTime(0.001, now);
     gain.gain.exponentialRampToValueAtTime(gainVal, now + 0.01);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-    osc.connect(gain);
+    osc.connect(filter);
+    filter.connect(gain);
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + duration + 0.01);
   }
 
   place() {
-    this.tone(240, 0.09, 'triangle', 0.1);
-    this.tone(420, 0.06, 'sine', 0.05);
+    // A soft wooden tap with a little rounded glass resonance.
+    this.tone(255, 0.075, 'triangle', 0.055, 0, 205, 1450);
+    this.tone(505, 0.085, 'sine', 0.027, 0.008, 440, 2400);
   }
 
   move() {
-    this.tone(310, 0.08, 'sine', 0.07);
+    this.tone(360, 0.105, 'sine', 0.045, 0, 294, 2100);
   }
 
   capture() {
-    this.tone(520, 0.09, 'triangle', 0.09);
-    this.tone(320, 0.14, 'triangle', 0.08, 0.05);
+    this.tone(178, 0.12, 'triangle', 0.065, 0, 118, 1200);
+    this.tone(302, 0.13, 'sine', 0.035, 0.018, 196, 1800);
   }
 
   mill() {
-    this.tone(440, 0.1, 'sine', 0.08);
-    this.tone(554.37, 0.12, 'sine', 0.08, 0.06);
-    this.tone(659.25, 0.16, 'sine', 0.08, 0.12);
+    this.tone(392, 0.12, 'sine', 0.035, 0, 392, 2600);
+    this.tone(493.88, 0.14, 'sine', 0.038, 0.055, 493.88, 3000);
+    this.tone(587.33, 0.18, 'sine', 0.04, 0.11, 587.33, 3200);
   }
 
   win() {
-    this.tone(523.25, 0.14, 'triangle', 0.09, 0);
-    this.tone(659.25, 0.14, 'triangle', 0.09, 0.09);
-    this.tone(783.99, 0.16, 'triangle', 0.09, 0.18);
-    this.tone(1046.5, 0.28, 'triangle', 0.1, 0.27);
+    // A gentle rising major chord keeps a win rewarding without a sharp arcade beep.
+    this.tone(392, 0.2, 'sine', 0.045, 0, 392, 2600);
+    this.tone(493.88, 0.22, 'sine', 0.045, 0.075, 493.88, 2800);
+    this.tone(587.33, 0.24, 'triangle', 0.04, 0.15, 587.33, 3000);
+    this.tone(783.99, 0.36, 'sine', 0.038, 0.23, 783.99, 3200);
   }
 }
 

@@ -21,7 +21,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
   disabled,
   onSelectPit,
 }) => {
-  const renderSeeds = (count: number, ownerColor: string, maxShow = 12) => {
+  const renderSeeds = (count: number, ownerColor: string, maxShow = 12, animateLast = false) => {
     const shown = Math.min(count, maxShow);
     return (
       <div className="relative aspect-square w-full max-w-8 sm:max-w-12 pointer-events-none">
@@ -30,7 +30,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
           return (
             <span
               key={i}
-              className="absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full"
+              className={`absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${animateLast && i === shown - 1 ? 'animate-seed-pop' : ''}`}
               style={{
                 left: `calc(50% + ${ox * 0.45}%)`,
                 top: `calc(50% + ${oy * 0.45}%)`,
@@ -60,7 +60,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
         className="flex min-h-11 w-full min-w-0 flex-col items-center gap-1 group cursor-pointer disabled:cursor-default"
       >
         <div
-          className="aspect-square w-full max-w-9 sm:max-w-16 rounded-full flex items-center justify-center relative transition-all duration-150 group-hover:scale-105 group-disabled:hover:scale-100"
+          className={`aspect-square w-full max-w-9 sm:max-w-16 rounded-full flex items-center justify-center relative transition-all duration-150 group-hover:scale-105 group-disabled:hover:scale-100 ${isLast ? 'mancala-pit-last' : ''}`}
           style={{
             backgroundColor: theme.bgBoardAlt,
             border: `2px solid ${
@@ -69,7 +69,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             boxShadow: 'inset 0 3px 8px rgba(0,0,0,0.45)',
           }}
         >
-          {renderSeeds(count, color)}
+          {renderSeeds(count, color, 12, isLast)}
         </div>
         <span
           className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full"
@@ -115,7 +115,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p2Color }}>
               P2
             </span>
-            {renderSeeds(state.pits[13], theme.p2Color, 13)}
+            {renderSeeds(state.pits[13], theme.p2Color, 13, state.lastPit === 13)}
             <span className="text-lg font-mono font-bold" style={{ color: theme.textPrimary }}>
               {state.pits[13]}
             </span>
@@ -145,7 +145,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p1Color }}>
               P1
             </span>
-            {renderSeeds(state.pits[6], theme.p1Color, 13)}
+            {renderSeeds(state.pits[6], theme.p1Color, 13, state.lastPit === 6)}
             <span className="text-lg font-mono font-bold" style={{ color: theme.textPrimary }}>
               {state.pits[6]}
             </span>

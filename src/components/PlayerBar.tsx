@@ -1,5 +1,11 @@
 import React from 'react';
-import { GameMode, Player, ThemePalette } from '../types/game';
+import { Player, GameMode, ThemePalette } from '../types/game';
+
+export interface PlayerMetric {
+  value: string;
+  label: string;
+  detail?: string;
+}
 
 interface PlayerBarProps {
   turn: Player;
@@ -8,8 +14,8 @@ interface PlayerBarProps {
   aiThinking: boolean;
   localPlayer?: Player;
   theme: ThemePalette;
-  p1Metric: string;
-  p2Metric: string;
+  p1Metric: PlayerMetric;
+  p2Metric: PlayerMetric;
   statusHint?: string;
 }
 
@@ -25,102 +31,119 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   statusHint,
 }) => {
   const p1Label = mode === 'ai'
-    ? `You (${theme.p1Name})`
+    ? 'You'
     : mode === 'online'
-      ? `${localPlayer === 1 ? 'You' : 'Opponent'} (${theme.p1Name})`
-      : `Player 1 (${theme.p1Name})`;
+      ? (localPlayer === 1 ? 'You' : 'Opponent')
+      : 'Player 1';
   const p2Label = mode === 'ai'
-    ? `AI (${theme.p2Name})`
+    ? 'AI'
     : mode === 'online'
-      ? `${localPlayer === 2 ? 'You' : 'Opponent'} (${theme.p2Name})`
-      : `Player 2 (${theme.p2Name})`;
+      ? (localPlayer === 2 ? 'You' : 'Opponent')
+      : 'Player 2';
 
-  const isP1Active = winner === null && turn === 1;
-  const isP2Active = winner === null && turn === 2;
+  const p1Active = winner === null && turn === 1;
+  const p2Active = winner === null && turn === 2;
+  const activeColor = turn === 1 ? theme.p1Color : theme.p2Color;
+  const activeStroke = turn === 1 ? theme.p1Stroke : theme.p2Stroke;
+  const activeName = turn === 1 ? theme.p1Name : theme.p2Name;
+
+  const announcement = winner === 'draw'
+    ? 'Round complete · It’s a draw'
+    : winner !== null
+      ? `${winner === 1 ? p1Label : p2Label} wins`
+      : mode === 'ai'
+        ? turn === 1 ? 'Your turn' : aiThinking ? 'AI is thinking' : 'AI to move'
+        : mode === 'online'
+          ? turn === localPlayer ? 'Your turn' : 'Opponent’s turn'
+          : `Player ${turn}’s turn`;
+
+  const renderPlayerCard = (
+    player: Player,
+    label: string,
+    metric: PlayerMetric,
+    active: boolean,
+  ) => {
+    const color = player === 1 ? theme.p1Color : theme.p2Color;
+    const stroke = player === 1 ? theme.p1Stroke : theme.p2Stroke;
+    const glow = player === 1 ? theme.p1Glow : theme.p2Glow;
+    const name = player === 1 ? theme.p1Name : theme.p2Name;
+
+    return (
+      <div
+        key={player}
+        aria-current={active ? 'true' : undefined}
+        className={`player-score-card${active ? ' player-score-card-active' : ''}`}
+        style={{
+          backgroundColor: active ? `color-mix(in srgb, ${color} 13%, ${theme.bgSurface})` : theme.bgSurface,
+          border: `1.5px solid ${active ? stroke : theme.border}`,
+          boxShadow: active ? `0 8px 22px ${glow}, 0 0 0 2px ${glow}` : '0 2px 8px rgba(20, 45, 40, 0.04)',
+        }}
+      >
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span
+            className={`player-token${active ? ' player-token-active' : ''}`}
+            style={{ backgroundColor: color, borderColor: stroke }}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-xs sm:text-sm font-bold" style={{ color: theme.textPrimary }}>
+                {label}
+              </span>
+              {active && (
+                <span className="player-active-tag" style={{ color: player === 1 ? theme.accent : theme.captureHighlight }}>
+                  TURN
+                </span>
+              )}
+            </div>
+            <span className="block truncate text-[10px] font-semibold uppercase tracking-[0.13em]" style={{ color: theme.textMuted }}>
+              {name} pieces
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-2 flex items-baseline gap-1.5 pl-[30px]">
+          <span className="player-score-value" style={{ color: active ? theme.textPrimary : theme.textSecondary }}>
+            {metric.value}
+          </span>
+          <span className="text-[11px] font-semibold" style={{ color: theme.textSecondary }}>
+            {metric.label}
+          </span>
+          {metric.detail && (
+            <span className="ml-auto truncate text-[10px] font-medium" style={{ color: theme.textMuted }}>
+              {metric.detail}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col gap-2" aria-live="polite">
-      <div className="grid grid-cols-2 gap-3">
-        {/* Player 1 Card */}
-        <div
-          aria-current={isP1Active ? 'true' : undefined}
-          className="px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 transition-all duration-200"
-          style={{
-            backgroundColor: theme.bgSurface,
-            border: `1.5px solid ${isP1Active ? theme.p1Stroke : theme.border}`,
-            boxShadow: isP1Active ? `0 0 0 3px ${theme.p1Glow}` : 'none',
-          }}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span
-              className="w-4 h-4 rounded-full shrink-0"
-              style={{
-                backgroundColor: theme.p1Color,
-                border: `2px solid ${theme.p1Stroke}`,
-              }}
-            />
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm font-semibold truncate" style={{ color: theme.textPrimary }}>
-                {p1Label}
-              </div>
-              <div className="truncate whitespace-nowrap text-[10px] sm:text-[11px] font-mono" style={{ color: theme.textMuted }}>
-                {p1Metric}
-              </div>
-            </div>
-          </div>
-          {isP1Active && (
-            <span
-              className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
-              style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
-            >
-              Turn
-            </span>
-          )}
-          {isP1Active && <span className="sr-only">Current turn</span>}
-        </div>
+    <section className="w-full max-w-2xl mx-auto flex flex-col gap-2.5" aria-label="Players and score">
+      <div
+        className={`turn-announcement${winner === null ? ' turn-announcement-live' : ' turn-announcement-finished'}`}
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          backgroundColor: winner === null ? `color-mix(in srgb, ${activeColor} 15%, ${theme.bgSurface})` : theme.bgSurface,
+          borderColor: winner === null ? activeStroke : theme.border,
+          color: theme.textPrimary,
+          boxShadow: winner === null ? `0 4px 14px ${turn === 1 ? theme.p1Glow : theme.p2Glow}` : 'none',
+        }}
+      >
+        {winner === null && <span className="turn-pulse-dot" style={{ backgroundColor: activeColor, boxShadow: `0 0 0 4px ${turn === 1 ? theme.p1Glow : theme.p2Glow}` }} />}
+        <span className="truncate text-sm font-bold tracking-tight">{announcement}</span>
+        {winner === null && <span className="turn-identity truncate" style={{ color: theme.textMuted }}>{activeName} pieces</span>}
+      </div>
 
-        {/* Player 2 Card */}
-        <div
-          aria-current={isP2Active ? 'true' : undefined}
-          className="px-3.5 py-2.5 rounded-xl flex items-center justify-between gap-2 transition-all duration-200"
-          style={{
-            backgroundColor: theme.bgSurface,
-            border: `1.5px solid ${isP2Active ? theme.p2Stroke : theme.border}`,
-            boxShadow: isP2Active ? `0 0 0 3px ${theme.p2Glow}` : 'none',
-          }}
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span
-              className="w-4 h-4 rounded-full shrink-0"
-              style={{
-                backgroundColor: theme.p2Color,
-                border: `2px solid ${theme.p2Stroke}`,
-              }}
-            />
-            <div className="min-w-0">
-              <div className="text-xs sm:text-sm font-semibold truncate" style={{ color: theme.textPrimary }}>
-                {p2Label}
-              </div>
-              <div className="truncate whitespace-nowrap text-[10px] sm:text-[11px] font-mono" style={{ color: theme.textMuted }}>
-                {p2Metric}
-              </div>
-            </div>
-          </div>
-          {isP2Active && (
-            <span
-              className="hidden sm:inline-flex text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0"
-              style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
-            >
-              {aiThinking ? 'Thinking…' : 'Turn'}
-            </span>
-          )}
-          {isP2Active && <span className="sr-only">{aiThinking ? 'AI is thinking' : 'Current turn'}</span>}
-        </div>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+        {renderPlayerCard(1, p1Label, p1Metric, p1Active)}
+        {renderPlayerCard(2, p2Label, p2Metric, p2Active)}
       </div>
 
       {statusHint && (
         <div
-          className="text-center text-xs font-medium py-1.5 px-3 rounded-lg"
+          className="text-center text-xs font-medium leading-relaxed py-2 px-3 rounded-xl"
           style={{
             backgroundColor: theme.bgSurface,
             color: theme.textSecondary,
@@ -130,6 +153,6 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
           {statusHint}
         </div>
       )}
-    </div>
+    </section>
   );
 };

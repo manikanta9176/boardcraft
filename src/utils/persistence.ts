@@ -64,7 +64,7 @@ function isGameId(value: unknown): value is GameId {
 }
 
 function isThemeId(value: unknown): value is ThemeId {
-  return value === 'obsidian' || value === 'birch' || value === 'walnut';
+  return value === 'sea-glass' || value === 'obsidian' || value === 'birch' || value === 'walnut';
 }
 
 function isDifficulty(value: unknown): value is Difficulty {
@@ -75,7 +75,7 @@ export function loadPreferences(): PlayerPreferences {
   const value = parseRaw(PREFERENCES_KEY);
   if (isRecord(value) && value.version === STORAGE_VERSION) {
     return {
-      themeId: isThemeId(value.themeId) ? value.themeId : 'obsidian',
+      themeId: isThemeId(value.themeId) ? value.themeId : 'sea-glass',
       soundEnabled: typeof value.soundEnabled === 'boolean' ? value.soundEnabled : true,
       difficulty: isDifficulty(value.difficulty) ? value.difficulty : 'medium',
       lastGameId: isGameId(value.lastGameId) ? value.lastGameId : null,
@@ -86,7 +86,7 @@ export function loadPreferences(): PlayerPreferences {
   const legacyTheme = readRaw('boardcraft-theme');
   const legacySound = readRaw('boardcraft-sound');
   return {
-    themeId: isThemeId(legacyTheme) ? legacyTheme : 'obsidian',
+    themeId: isThemeId(legacyTheme) ? legacyTheme : 'sea-glass',
     soundEnabled: legacySound === null ? true : legacySound === 'true',
     difficulty: 'medium',
     lastGameId: null,
