@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Grid3X3 } from 'lucide-react';
+import { X, Grid3X3, Radio } from 'lucide-react';
 import { GAMES } from '../games/registry';
 import { GameId, ThemePalette } from '../types/game';
 import { GameIcon } from './GameIcon';
@@ -7,6 +7,10 @@ import { GameIcon } from './GameIcon';
 interface SidebarProps {
   activeGame: GameId;
   onSelectGame: (id: GameId) => void;
+  onOpenLobby: () => void;
+  onOpenMultiplayer: () => void;
+  isLobby: boolean;
+  gameSelectionDisabled?: boolean;
   theme: ThemePalette;
   mobileOpen: boolean;
   onCloseMobile: () => void;
@@ -15,6 +19,10 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   activeGame,
   onSelectGame,
+  onOpenLobby,
+  onOpenMultiplayer,
+  isLobby,
+  gameSelectionDisabled = false,
   theme,
   mobileOpen,
   onCloseMobile,
@@ -36,11 +44,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={game.id}
+              disabled={gameSelectionDisabled}
               onClick={() => {
                 onSelectGame(game.id);
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: isActive ? theme.accentSoft : 'transparent',
                 color: isActive ? theme.accent : theme.textSecondary,
@@ -108,6 +117,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="flex-1 overflow-y-auto px-2.5 py-4">
+        <div className="space-y-1 mb-5">
+          <button
+            onClick={() => { onOpenLobby(); onCloseMobile(); }}
+            aria-current={isLobby ? 'page' : undefined}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
+            style={{ backgroundColor: isLobby ? theme.accentSoft : 'transparent', color: isLobby ? theme.accent : theme.textSecondary, border: `1px solid ${isLobby ? theme.accent + '40' : 'transparent'}` }}
+          >
+            <Grid3X3 className="w-[18px] h-[18px] shrink-0" />
+            <span className="text-sm font-semibold">Game library</span>
+          </button>
+          <button
+            onClick={() => { onOpenMultiplayer(); onCloseMobile(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors cursor-pointer"
+            style={{ color: theme.textSecondary, border: `1px solid transparent` }}
+          >
+            <Radio className="w-[18px] h-[18px] shrink-0" style={{ color: theme.validHighlight }} />
+            <span className="text-sm font-semibold">Play online</span>
+          </button>
+        </div>
         {renderGroup('Morris Family', morrisGames)}
         {renderGroup('Classic Strategy', classicGames)}
       </div>

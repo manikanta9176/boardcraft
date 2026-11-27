@@ -25,7 +25,7 @@ export const ReversiBoard: React.FC<ReversiBoardProps> = ({
     state.flippedCells.some(([fr, fc]) => fr === r && fc === c);
 
   return (
-    <div className="w-full max-w-[490px] mx-auto select-none">
+    <div className="w-full mx-auto select-none" style={{ maxWidth: 'min(490px, max(260px, calc(100dvh - 360px)))' }}>
       <div
         className="rounded-2xl p-3 sm:p-4 shadow-xl"
         style={{

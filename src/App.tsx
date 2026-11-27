@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { GameOverBanner } from './components/GameOverBanner';
+import { ConfettiBurst } from './components/ConfettiBurst';
+import { LobbyView } from './components/LobbyView';
+import { MultiplayerModal } from './components/MultiplayerModal';
+import { OnlineBar } from './components/OnlineBar';
 import { PlayerBar } from './components/PlayerBar';
 import { RulesModal } from './components/RulesModal';
 import { Sidebar } from './components/Sidebar';
@@ -63,6 +67,16 @@ import {
 } from './games/reversi';
 import { Difficulty, GameId, GameMode, Player, THEMES, ThemeId } from './types/game';
 import { sound } from './utils/sound';
+import { applyRemoteMove } from './games/stateTypes';
+import { ActiveTransport, PeerCallbacks, hostOnlineRoom, joinOnlineRoom } from './multiplayer/onlinePeer';
+import { HotspotHostSession, createHotspotHostSession, joinHotspotOffer } from './multiplayer/hotspotDirect';
+import {
+  ConnectionPhase,
+  NetMessage,
+  TransportKind,
+  generateRoomCode,
+  normalizeRoomCode,
+} from './multiplayer/types';
 
 type AnyGameState =
   | { kind: 'morris'; data: MorrisState }
@@ -100,6 +114,21 @@ function createInitialGameState(id: GameId): AnyGameState {
   }
 }
 
+function isGameId(value: unknown): value is GameId {
+  return typeof value === 'string' && GAMES.some((game) => game.id === value);
+}
+
+function isAnyGameState(value: unknown): value is AnyGameState {
+  if (!value || typeof value !== 'object' || !('kind' in value) || !('data' in value)) return false;
+  const candidate = value as { kind?: unknown; data?: { turn?: unknown; winner?: unknown } };
+  return (
+    ['morris', 'connect4', 'reversi', 'checkers', 'mancala', 'gomoku', 'dots-and-boxes'].includes(String(candidate.kind)) &&
+    !!candidate.data &&
+    (candidate.data.turn === 1 || candidate.data.turn === 2) &&
+    (candidate.data.winner === null || candidate.data.winner === 1 || candidate.data.winner === 2 || candidate.data.winner === 'draw')
+  );
+}
+
 export function App() {
   const [activeGameId, setActiveGameId] = useState<GameId>('nine-mens-morris');
   const [mode, setMode] = useState<GameMode>('ai');
@@ -121,8 +150,32 @@ export function App() {
   const [rulesOpen, setRulesOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [aiThinking, setAiThinking] = useState(false);
+  const [showLobby, setShowLobby] = useState(true);
+  const [multiplayerOpen, setMultiplayerOpen] = useState(false);
+  const [multiplayerTab, setMultiplayerTab] = useState<'online' | 'hotspot'>('online');
+  const [connectionPhase, setConnectionPhase] = useState<ConnectionPhase>('idle');
+  const [transportKind, setTransportKind] = useState<TransportKind | null>(null);
+  const [roomCode, setRoomCode] = useState('');
+  const [hotspotOfferCode, setHotspotOfferCode] = useState('');
+  const [hotspotAnswerCode, setHotspotAnswerCode] = useState('');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isHost, setIsHost] = useState(false);
+  const [hostPlayer, setHostPlayer] = useState<Player>(1);
+  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [reactionToast, setReactionToast] = useState<string | null>(null);
+  const [inviteJoinCode] = useState(() => normalizeRoomCode(new URLSearchParams(window.location.search).get('room') ?? ''));
 
   const aiTimerRef = useRef<number | null>(null);
+  const transportRef = useRef<ActiveTransport | null>(null);
+  const hotspotHostRef = useRef<HotspotHostSession | null>(null);
+  const gameStateRef = useRef(gameState);
+  const activeGameIdRef = useRef(activeGameId);
+  const hostPlayerRef = useRef<Player>(hostPlayer);
+  const reactionTimerRef = useRef<number | null>(null);
+  const pingTimerRef = useRef<number | null>(null);
+  gameStateRef.current = gameState;
+  activeGameIdRef.current = activeGameId;
+  hostPlayerRef.current = hostPlayer;
   const theme = THEMES[themeId];
   const activeMeta = useMemo(
     () => GAMES.find((g) => g.id === activeGameId) ?? GAMES[0],
@@ -138,8 +191,258 @@ export function App() {
     localStorage.setItem('boardcraft-sound', String(soundEnabled));
   }, [soundEnabled]);
 
+  useEffect(() => {
+    if (inviteJoinCode) {
+      setMultiplayerTab('online');
+      setMultiplayerOpen(true);
+    }
+  }, [inviteJoinCode]);
+
+  useEffect(() => () => {
+    transportRef.current?.close();
+    if (reactionTimerRef.current !== null) window.clearTimeout(reactionTimerRef.current);
+    if (pingTimerRef.current !== null) window.clearInterval(pingTimerRef.current);
+  }, []);
+
+  const sendNetworkMessage = useCallback((message: NetMessage) => {
+    transportRef.current?.send(message);
+  }, []);
+  const closeMultiplayer = useCallback(() => setMultiplayerOpen(false), []);
+
+  const resetConnection = useCallback(() => {
+    transportRef.current?.close();
+    transportRef.current = null;
+    hotspotHostRef.current = null;
+    setConnectionPhase('idle');
+    setTransportKind(null);
+    setRoomCode('');
+    setHotspotOfferCode('');
+    setHotspotAnswerCode('');
+    setConnectionError(null);
+    setLatencyMs(null);
+    setIsHost(false);
+    setHostPlayer(1);
+    setMode((current) => current === 'online' ? 'local' : current);
+  }, []);
+
+  const createPeerCallbacks = useCallback((host: boolean): PeerCallbacks => ({
+    onWaiting: () => setConnectionPhase('waiting'),
+    onConnected: () => {
+      setConnectionPhase('connected');
+      setConnectionError(null);
+      setMode('online');
+      setShowLobby(false);
+      setMultiplayerOpen(false);
+      if (host) {
+        window.setTimeout(() => {
+          transportRef.current?.send({
+            type: 'SYNC_STATE',
+            gameId: activeGameIdRef.current,
+            hostPlayer: hostPlayerRef.current,
+            state: gameStateRef.current,
+          });
+        }, 80);
+      }
+    },
+    onMessage: (message) => {
+      if (message.type === 'PING') {
+        if (Number.isFinite(message.ts)) sendNetworkMessage({ type: 'PONG', ts: message.ts });
+        return;
+      }
+      if (message.type === 'PONG') {
+        if (Number.isFinite(message.ts)) setLatencyMs(Math.max(0, Date.now() - message.ts));
+        return;
+      }
+      if (message.type === 'REACTION') {
+        if (typeof message.emoji !== 'string' || typeof message.label !== 'string') return;
+        setReactionToast(`${message.emoji} ${message.label}`);
+        if (reactionTimerRef.current !== null) window.clearTimeout(reactionTimerRef.current);
+        reactionTimerRef.current = window.setTimeout(() => setReactionToast(null), 2200);
+        return;
+      }
+      if (message.type === 'SYNC_STATE') {
+        if (host || !isGameId(message.gameId) || (message.hostPlayer !== 1 && message.hostPlayer !== 2) || !isAnyGameState(message.state)) return;
+        const initial = createInitialGameState(message.gameId);
+        if (initial.kind !== message.state.kind) return;
+        setHostPlayer(message.hostPlayer);
+        setActiveGameId(message.gameId);
+        activeGameIdRef.current = message.gameId;
+        gameStateRef.current = message.state;
+        setGameState(message.state);
+        setHistory([]);
+        setCheckersSelected(null);
+        setShowLobby(false);
+        return;
+      }
+      if (message.type === 'SWITCH_GAME') {
+        if (host || !isGameId(message.gameId)) return;
+        const next = createInitialGameState(message.gameId);
+        activeGameIdRef.current = message.gameId;
+        gameStateRef.current = next;
+        setActiveGameId(message.gameId);
+        setGameState(next);
+        setHistory([]);
+        setCheckersSelected(null);
+        return;
+      }
+      if (message.type === 'RESET_GAME') {
+        if (host || !isGameId(message.gameId)) return;
+        const next = createInitialGameState(message.gameId);
+        activeGameIdRef.current = message.gameId;
+        gameStateRef.current = next;
+        setActiveGameId(message.gameId);
+        setGameState(next);
+        setHistory([]);
+        setCheckersSelected(null);
+        return;
+      }
+      if (message.type === 'SWAP_SIDES') {
+        if (host || (message.hostPlayer !== 1 && message.hostPlayer !== 2)) return;
+        setHostPlayer(message.hostPlayer);
+        hostPlayerRef.current = message.hostPlayer;
+        return;
+      }
+      if (message.type === 'REMATCH_REQUEST') {
+        if (!host) return;
+        setReactionToast('Your opponent wants a rematch');
+        if (reactionTimerRef.current !== null) window.clearTimeout(reactionTimerRef.current);
+        reactionTimerRef.current = window.setTimeout(() => setReactionToast(null), 2400);
+        return;
+      }
+      if (message.type === 'MOVE') {
+        if (!isGameId(message.gameId)) return;
+        const remotePlayer: Player = host ? (hostPlayerRef.current === 1 ? 2 : 1) : hostPlayerRef.current;
+        const current = gameStateRef.current;
+        if (message.gameId !== activeGameIdRef.current || current.data.turn !== remotePlayer) return;
+        try {
+          const result = applyRemoteMove(current, message.payload);
+          if (!result) return;
+          gameStateRef.current = result.next;
+          setHistory((historyItems) => [...historyItems, current]);
+          setGameState(result.next);
+          if (result.soundEvent === 'win') sound.win();
+          else if (result.soundEvent === 'mill') sound.mill();
+          else if (result.soundEvent === 'capture') sound.capture();
+          else if (result.soundEvent === 'move') sound.move();
+          else sound.place();
+        } catch {
+          // Malformed data from a stale or incompatible peer is ignored.
+        }
+      }
+    },
+    onDisconnected: (reason) => {
+      setConnectionError(reason ?? 'The other player disconnected.');
+      setConnectionPhase('error');
+      setMode((current) => current === 'online' ? 'local' : current);
+      setMultiplayerOpen(true);
+    },
+    onError: (message) => {
+      setConnectionError(message);
+      setConnectionPhase('error');
+    },
+  }), [sendNetworkMessage]);
+
+  const openMultiplayer = (tab: 'online' | 'hotspot' = 'online', gameId?: GameId) => {
+    if (gameId) {
+      setActiveGameId(gameId);
+      activeGameIdRef.current = gameId;
+      const next = createInitialGameState(gameId);
+      gameStateRef.current = next;
+      setGameState(next);
+      setHistory([]);
+      setShowLobby(false);
+    }
+    setMultiplayerTab(tab);
+    setMultiplayerOpen(true);
+  };
+
+  const createRoom = () => {
+    resetConnection();
+    const code = generateRoomCode();
+    setConnectionError(null);
+    setConnectionPhase('initializing');
+    setTransportKind('online-room');
+    setRoomCode(code);
+    setIsHost(true);
+    setHostPlayer(1);
+    hostPlayerRef.current = 1;
+    const transport = hostOnlineRoom(code, createPeerCallbacks(true));
+    transportRef.current = transport;
+  };
+
+  const joinRoom = (code: string) => {
+    resetConnection();
+    const normalized = normalizeRoomCode(code);
+    setConnectionError(null);
+    setConnectionPhase('connecting');
+    setTransportKind('online-room');
+    setRoomCode(normalized);
+    setIsHost(false);
+    const transport = joinOnlineRoom(normalized, createPeerCallbacks(false));
+    transportRef.current = transport;
+  };
+
+  const startHotspotHost = async () => {
+    resetConnection();
+    setConnectionError(null);
+    setConnectionPhase('initializing');
+    setTransportKind('hotspot-direct');
+    setIsHost(true);
+    setHostPlayer(1);
+    hostPlayerRef.current = 1;
+    try {
+      const session = await createHotspotHostSession(createPeerCallbacks(true));
+      hotspotHostRef.current = session;
+      transportRef.current = session.transport;
+      setHotspotOfferCode(session.offerCode);
+      setConnectionPhase('waiting');
+    } catch (error) {
+      setConnectionPhase('error');
+      setConnectionError(error instanceof Error ? error.message : 'Could not create a local connection.');
+    }
+  };
+
+  const acceptHotspotAnswer = async (answerCode: string) => {
+    try {
+      if (!hotspotHostRef.current) throw new Error('Create a hotspot offer first.');
+      setConnectionPhase('connecting');
+      await hotspotHostRef.current.acceptAnswer(answerCode);
+    } catch (error) {
+      setConnectionPhase('error');
+      setConnectionError(error instanceof Error ? error.message : 'Could not connect to that answer code.');
+    }
+  };
+
+  const joinHotspot = async (offerCode: string) => {
+    resetConnection();
+    setConnectionError(null);
+    setConnectionPhase('connecting');
+    setTransportKind('hotspot-direct');
+    setIsHost(false);
+    try {
+      const session = await joinHotspotOffer(offerCode, createPeerCallbacks(false));
+      transportRef.current = session.transport;
+      setHotspotAnswerCode(session.answerCode);
+      setConnectionPhase('waiting');
+    } catch (error) {
+      setConnectionPhase('error');
+      setConnectionError(error instanceof Error ? error.message : 'Could not read that offer code.');
+    }
+  };
+
+  useEffect(() => {
+    if (connectionPhase !== 'connected') return;
+    pingTimerRef.current = window.setInterval(() => {
+      sendNetworkMessage({ type: 'PING', ts: Date.now() });
+    }, 3000);
+    return () => {
+      if (pingTimerRef.current !== null) window.clearInterval(pingTimerRef.current);
+      pingTimerRef.current = null;
+    };
+  }, [connectionPhase, sendNetworkMessage]);
+
   const resetGame = useCallback(
-    (targetId: GameId = activeGameId) => {
+    (targetId: GameId = activeGameId, notifyPeer = true) => {
       if (aiTimerRef.current) {
         window.clearTimeout(aiTimerRef.current);
         aiTimerRef.current = null;
@@ -147,41 +450,61 @@ export function App() {
       setAiThinking(false);
       setCheckersSelected(null);
       setHistory([]);
-      setGameState(createInitialGameState(targetId));
+      const next = createInitialGameState(targetId);
+      gameStateRef.current = next;
+      setGameState(next);
+      if (notifyPeer && mode === 'online' && isHost) {
+        sendNetworkMessage({ type: 'RESET_GAME', gameId: targetId });
+      }
     },
-    [activeGameId],
+    [activeGameId, isHost, mode, sendNetworkMessage],
   );
 
   const handleSelectGame = (id: GameId) => {
+    if (mode === 'online' && !isHost) return;
     setActiveGameId(id);
-    resetGame(id);
+    activeGameIdRef.current = id;
+    setShowLobby(false);
+    resetGame(id, mode !== 'online');
+    if (mode === 'online') sendNetworkMessage({ type: 'SWITCH_GAME', gameId: id });
   };
 
   const handleModeChange = (nextMode: GameMode) => {
+    if (nextMode === 'online') {
+      openMultiplayer('online');
+      return;
+    }
     if (nextMode === mode) return;
+    if (connectionPhase === 'connected') resetConnection();
     setMode(nextMode);
+    setShowLobby(false);
     resetGame(activeGameId);
   };
 
-  const pushState = useCallback((next: AnyGameState) => {
-    setGameState((prev) => {
-      setHistory((h) => [...h, prev]);
-      return next;
-    });
-  }, []);
+  const pushState = useCallback((next: AnyGameState, payload?: unknown) => {
+    const previous = gameStateRef.current;
+    gameStateRef.current = next;
+    setHistory((items) => [...items, previous]);
+    setGameState(next);
+    if (payload !== undefined && mode === 'online') {
+      sendNetworkMessage({ type: 'MOVE', gameId: activeGameIdRef.current, payload });
+    }
+  }, [mode, sendNetworkMessage]);
 
   const handleUndo = () => {
-    if (history.length === 0 || aiThinking) return;
+    if (history.length === 0 || aiThinking || mode === 'online') return;
     if (mode === 'ai') {
       // Pop back to the last state where it was Player 1's turn
       let idx = history.length - 1;
       while (idx > 0 && history[idx].data.turn !== 1) {
         idx--;
       }
+      gameStateRef.current = history[idx];
       setGameState(history[idx]);
       setHistory(history.slice(0, idx));
     } else {
       const prev = history[history.length - 1];
+      gameStateRef.current = prev;
       setGameState(prev);
       setHistory(history.slice(0, -1));
     }
@@ -194,7 +517,14 @@ export function App() {
 
   // AI Turn Effect
   useEffect(() => {
-    if (mode !== 'ai' || winner !== null || turn !== 2) {
+    if (
+      mode !== 'ai' ||
+      winner !== null ||
+      turn !== 2 ||
+      connectionPhase === 'initializing' ||
+      connectionPhase === 'waiting' ||
+      connectionPhase === 'connecting'
+    ) {
       setAiThinking(false);
       return;
     }
@@ -279,9 +609,15 @@ export function App() {
         window.clearTimeout(aiTimerRef.current);
       }
     };
-  }, [gameState, mode, difficulty, turn, winner, pushState]);
+  }, [gameState, mode, difficulty, turn, winner, pushState, connectionPhase]);
 
-  const humanDisabled = mode === 'ai' && (turn === 2 || aiThinking);
+  const onlineConnected = mode === 'online' && connectionPhase === 'connected';
+  const localPlayer: Player = isHost ? hostPlayer : hostPlayer === 1 ? 2 : 1;
+  const connectionInProgress = connectionPhase === 'initializing' || connectionPhase === 'waiting' || connectionPhase === 'connecting';
+  const humanDisabled =
+    (mode === 'ai' && (turn === 2 || aiThinking)) ||
+    connectionInProgress ||
+    (mode === 'online' && (connectionPhase !== 'connected' || turn !== localPlayer));
 
   // Handlers for each game
   const handleMorrisSelect = (nodeId: number | null) => {
@@ -301,7 +637,7 @@ export function App() {
     else if (move.type === 'capture') sound.capture();
     else if (move.type === 'move') sound.move();
     else sound.place();
-    pushState({ kind: 'morris', data: updated });
+    pushState({ kind: 'morris', data: updated }, move);
   };
 
   const handleConnect4Drop = (col: number) => {
@@ -310,7 +646,7 @@ export function App() {
     if (updated === gameState.data) return;
     if (updated.winner !== null) sound.win();
     else sound.place();
-    pushState({ kind: 'connect4', data: updated });
+    pushState({ kind: 'connect4', data: updated }, col);
   };
 
   const handleReversiPlace = (row: number, col: number) => {
@@ -319,7 +655,7 @@ export function App() {
     if (updated === gameState.data) return;
     if (updated.winner !== null) sound.win();
     else sound.place();
-    pushState({ kind: 'reversi', data: updated });
+    pushState({ kind: 'reversi', data: updated }, [row, col]);
   };
 
   const handleCheckersStep = (move: CheckersStepMove) => {
@@ -330,7 +666,7 @@ export function App() {
     if (updated.winner !== null) sound.win();
     else if (move.captured) sound.capture();
     else sound.move();
-    pushState({ kind: 'checkers', data: updated });
+    pushState({ kind: 'checkers', data: updated }, move);
   };
 
   const handleMancalaPit = (pitIdx: number) => {
@@ -340,7 +676,7 @@ export function App() {
     if (updated.winner !== null) sound.win();
     else if (updated.lastCaptured) sound.capture();
     else sound.place();
-    pushState({ kind: 'mancala', data: updated });
+    pushState({ kind: 'mancala', data: updated }, pitIdx);
   };
 
   const handleGomokuPlace = (row: number, col: number) => {
@@ -349,7 +685,7 @@ export function App() {
     if (updated === gameState.data) return;
     if (updated.winner !== null) sound.win();
     else sound.place();
-    pushState({ kind: 'gomoku', data: updated });
+    pushState({ kind: 'gomoku', data: updated }, [row, col]);
   };
 
   const handleDotsEdge = (edge: EdgeMove) => {
@@ -359,7 +695,7 @@ export function App() {
     if (updated.winner !== null) sound.win();
     else if (updated.lastClaimedBoxes.length > 0) sound.mill();
     else sound.place();
-    pushState({ kind: 'dots-and-boxes', data: updated });
+    pushState({ kind: 'dots-and-boxes', data: updated }, edge);
   };
 
   // Compute PlayerBar metrics & status hints
@@ -462,6 +798,30 @@ export function App() {
     }
   }, [gameState]);
 
+  const launchGame = (id: GameId, nextMode: 'ai' | 'local') => {
+    setActiveGameId(id);
+    activeGameIdRef.current = id;
+    setMode(nextMode);
+    setShowLobby(false);
+    resetGame(id, false);
+  };
+
+  const playAgain = () => {
+    if (mode === 'online' && !isHost) {
+      sendNetworkMessage({ type: 'REMATCH_REQUEST' });
+      return;
+    }
+    resetGame(activeGameId);
+  };
+
+  const swapSides = () => {
+    if (!isHost) return;
+    const nextPlayer: Player = hostPlayer === 1 ? 2 : 1;
+    setHostPlayer(nextPlayer);
+    hostPlayerRef.current = nextPlayer;
+    sendNetworkMessage({ type: 'SWAP_SIDES', hostPlayer: nextPlayer });
+  };
+
   return (
     <div
       className="h-screen w-screen flex overflow-hidden transition-colors duration-200"
@@ -470,113 +830,108 @@ export function App() {
       <Sidebar
         activeGame={activeGameId}
         onSelectGame={handleSelectGame}
+        onOpenLobby={() => { if (mode !== 'online') setShowLobby(true); }}
+        onOpenMultiplayer={() => openMultiplayer('online')}
+        isLobby={showLobby}
+        gameSelectionDisabled={onlineConnected && !isHost}
         theme={theme}
         mobileOpen={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
       />
 
       <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <GameHeader
-          game={activeMeta}
-          mode={mode}
-          onModeChange={handleModeChange}
-          difficulty={difficulty}
-          onDifficultyChange={setDifficulty}
-          theme={theme}
-          onThemeChange={setThemeId}
-          soundEnabled={soundEnabled}
-          onToggleSound={() => setSoundEnabled((v) => !v)}
-          canUndo={history.length > 0 && !aiThinking}
-          onUndo={handleUndo}
-          onReset={() => resetGame(activeGameId)}
-          onOpenRules={() => setRulesOpen(true)}
-          onOpenMobileMenu={() => setMobileMenuOpen(true)}
-        />
-
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col items-center gap-4">
-          <PlayerBar
-            turn={turn}
-            winner={winner}
-            mode={mode}
-            aiThinking={aiThinking}
-            theme={theme}
-            p1Metric={p1Metric}
-            p2Metric={p2Metric}
-            statusHint={winner === null ? statusHint : undefined}
-          />
-
-          {winner !== null && (
-            <GameOverBanner
-              winner={winner}
+        {showLobby ? (
+          <main className="flex-1 overflow-y-auto">
+            <LobbyView theme={theme} onLaunchGame={launchGame} onOpenMultiplayer={openMultiplayer} onOpenMenu={() => setMobileMenuOpen(true)} />
+          </main>
+        ) : (
+          <>
+            <GameHeader
+              game={activeMeta}
               mode={mode}
+              onModeChange={handleModeChange}
+              difficulty={difficulty}
+              onDifficultyChange={setDifficulty}
               theme={theme}
-              onPlayAgain={() => resetGame(activeGameId)}
-              subtitle={gameOverSubtitle}
+              onThemeChange={setThemeId}
+              soundEnabled={soundEnabled}
+              onToggleSound={() => setSoundEnabled((v) => !v)}
+              canUndo={history.length > 0 && !aiThinking && mode !== 'online'}
+              canReset={mode !== 'online' || isHost}
+              onUndo={handleUndo}
+              onReset={() => resetGame(activeGameId)}
+              onOpenRules={() => setRulesOpen(true)}
+              onOpenMobileMenu={() => setMobileMenuOpen(true)}
+              onOpenMultiplayer={() => openMultiplayer('online')}
+              multiplayerConnected={onlineConnected}
             />
-          )}
 
-          <div className="w-full flex-1 flex items-center justify-center py-1">
-            {gameState.kind === 'morris' && (
-              <MorrisBoard
-                state={gameState.data}
+            <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 flex flex-col items-center gap-4">
+              {onlineConnected && (
+                <OnlineBar
+                  theme={theme}
+                  transportKind={transportKind ?? 'online-room'}
+                  roomCode={roomCode}
+                  isHost={isHost}
+                  localPlayer={localPlayer}
+                  latencyMs={latencyMs}
+                  onSwapSides={swapSides}
+                  onSendReaction={(emoji, label) => sendNetworkMessage({ type: 'REACTION', emoji, label })}
+                  onDisconnect={resetConnection}
+                />
+              )}
+
+              <PlayerBar
+                turn={turn}
+                winner={winner}
+                mode={mode}
+                aiThinking={aiThinking}
+                localPlayer={localPlayer}
                 theme={theme}
-                disabled={humanDisabled}
-                onSelectNode={handleMorrisSelect}
-                onMove={handleMorrisMove}
+                p1Metric={p1Metric}
+                p2Metric={p2Metric}
+                statusHint={winner === null ? statusHint : undefined}
               />
-            )}
-            {gameState.kind === 'connect4' && (
-              <Connect4Board
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                onDropColumn={handleConnect4Drop}
-              />
-            )}
-            {gameState.kind === 'reversi' && (
-              <ReversiBoard
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                onPlace={handleReversiPlace}
-              />
-            )}
-            {gameState.kind === 'checkers' && (
-              <CheckersBoard
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                selected={checkersSelected}
-                onSelect={setCheckersSelected}
-                onStep={handleCheckersStep}
-              />
-            )}
-            {gameState.kind === 'mancala' && (
-              <MancalaBoard
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                onSelectPit={handleMancalaPit}
-              />
-            )}
-            {gameState.kind === 'gomoku' && (
-              <GomokuBoard
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                onPlace={handleGomokuPlace}
-              />
-            )}
-            {gameState.kind === 'dots-and-boxes' && (
-              <DotsBoxesBoard
-                state={gameState.data}
-                theme={theme}
-                disabled={humanDisabled}
-                onDrawEdge={handleDotsEdge}
-              />
-            )}
-          </div>
-        </main>
+
+              {winner !== null && (
+                <GameOverBanner
+                  winner={winner}
+                  mode={mode}
+                  localPlayer={localPlayer}
+                  isHost={isHost}
+                  theme={theme}
+                  onPlayAgain={playAgain}
+                  subtitle={gameOverSubtitle}
+                />
+              )}
+              {winner !== null && winner !== 'draw' && <ConfettiBurst theme={theme} />}
+
+              <div className="w-full flex-1 flex items-center justify-center py-1">
+                {gameState.kind === 'morris' && (
+                  <MorrisBoard state={gameState.data} theme={theme} disabled={humanDisabled} onSelectNode={handleMorrisSelect} onMove={handleMorrisMove} />
+                )}
+                {gameState.kind === 'connect4' && (
+                  <Connect4Board state={gameState.data} theme={theme} disabled={humanDisabled} onDropColumn={handleConnect4Drop} />
+                )}
+                {gameState.kind === 'reversi' && (
+                  <ReversiBoard state={gameState.data} theme={theme} disabled={humanDisabled} onPlace={handleReversiPlace} />
+                )}
+                {gameState.kind === 'checkers' && (
+                  <CheckersBoard state={gameState.data} theme={theme} disabled={humanDisabled} selected={checkersSelected} onSelect={setCheckersSelected} onStep={handleCheckersStep} />
+                )}
+                {gameState.kind === 'mancala' && (
+                  <MancalaBoard state={gameState.data} theme={theme} disabled={humanDisabled} onSelectPit={handleMancalaPit} />
+                )}
+                {gameState.kind === 'gomoku' && (
+                  <GomokuBoard state={gameState.data} theme={theme} disabled={humanDisabled} onPlace={handleGomokuPlace} />
+                )}
+                {gameState.kind === 'dots-and-boxes' && (
+                  <DotsBoxesBoard state={gameState.data} theme={theme} disabled={humanDisabled} onDrawEdge={handleDotsEdge} />
+                )}
+              </div>
+            </main>
+          </>
+        )}
       </div>
 
       {rulesOpen && (
@@ -585,6 +940,33 @@ export function App() {
           theme={theme}
           onClose={() => setRulesOpen(false)}
         />
+      )}
+
+      {multiplayerOpen && (
+        <MultiplayerModal
+          theme={theme}
+          initialTab={multiplayerTab}
+          initialJoinCode={inviteJoinCode}
+          phase={connectionPhase}
+          transportKind={transportKind}
+          roomCode={roomCode}
+          hotspotOfferCode={hotspotOfferCode}
+          hotspotAnswerCode={hotspotAnswerCode}
+          errorMsg={connectionError}
+          onClose={closeMultiplayer}
+          onCreateRoom={createRoom}
+          onJoinRoom={joinRoom}
+          onStartHotspotHost={startHotspotHost}
+          onAcceptHotspotAnswer={acceptHotspotAnswer}
+          onJoinHotspotOffer={joinHotspot}
+          onResetConnection={resetConnection}
+        />
+      )}
+
+      {reactionToast && (
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-base font-semibold shadow-xl animate-float-up" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }} aria-live="polite">
+          {reactionToast}
+        </div>
       )}
     </div>
   );

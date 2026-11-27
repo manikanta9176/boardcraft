@@ -19,10 +19,18 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Dots & Boxes** — 5×5 dot grid with edge drawing, box claiming, and chain tactics
 
 ## Features
-- **Play vs AI** (Easy / Medium / Hard) or **Local 2-Player** pass-and-play
+- **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
+- **Online Rooms** with a short room code, QR code, and shareable invite link
+- **Local Wi-Fi / Hotspot Pairing** with manually exchanged offer and answer codes for devices on the same network
 - **3 Curated Tabletop Themes**: Obsidian Studio, Nordic Birch, and Royal Walnut
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
+
+## Multiplayer Notes
+
+- Online rooms use PeerJS signaling to find one another and WebRTC data channels to exchange moves. No BoardCraft account or application server is required. The browser may use STUN/TURN services to establish a connection, and some network settings can prevent a match from connecting.
+- Local pairing uses WebRTC host candidates only. Put both devices on the same Wi-Fi or hotspot, then exchange the offer and answer codes. Some hotspot networks block traffic between connected devices.
+- Room codes are temporary. Keep the host page open until the other player joins; rooms are not saved or listed publicly.
 
 ## Local Development
 

@@ -26,7 +26,7 @@ export const DotsBoxesBoard: React.FC<DotsBoxesBoardProps> = ({
     state.lastEdge.col === col;
 
   return (
-    <div className="w-full max-w-[460px] mx-auto select-none">
+    <div className="w-full mx-auto select-none" style={{ maxWidth: 'min(460px, max(260px, calc(100dvh - 360px)))' }}>
       <div
         className="w-full aspect-square rounded-2xl p-4 sm:p-6 shadow-xl"
         style={{

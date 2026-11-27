@@ -8,6 +8,8 @@ interface GameOverBannerProps {
   theme: ThemePalette;
   onPlayAgain: () => void;
   subtitle?: string;
+  localPlayer?: Player;
+  isHost?: boolean;
 }
 
 export const GameOverBanner: React.FC<GameOverBannerProps> = ({
@@ -16,6 +18,8 @@ export const GameOverBanner: React.FC<GameOverBannerProps> = ({
   theme,
   onPlayAgain,
   subtitle,
+  localPlayer = 1,
+  isHost = true,
 }) => {
   const title =
     winner === 'draw'
@@ -24,7 +28,9 @@ export const GameOverBanner: React.FC<GameOverBannerProps> = ({
         ? winner === 1
           ? 'You Win!'
           : 'AI Wins!'
-        : `Player ${winner} Wins!`;
+        : mode === 'online'
+          ? winner === localPlayer ? 'You win!' : 'Opponent wins'
+          : `Player ${winner} Wins!`;
 
   return (
     <div
@@ -61,7 +67,7 @@ export const GameOverBanner: React.FC<GameOverBannerProps> = ({
         }}
       >
         <RotateCcw className="w-3.5 h-3.5" />
-        <span>Play Again</span>
+        <span>{mode === 'online' && !isHost ? 'Request rematch' : 'Play again'}</span>
       </button>
     </div>
   );

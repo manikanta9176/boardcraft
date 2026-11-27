@@ -1,5 +1,5 @@
 export type Player = 1 | 2;
-export type GameMode = 'ai' | 'local';
+export type GameMode = 'ai' | 'local' | 'online';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type ThemeId = 'obsidian' | 'birch' | 'walnut';
 
@@ -25,8 +25,15 @@ export interface GameMeta {
   tagline: string;
   players: string;
   duration: string;
+  badge?: string;
   rules: string[];
   tips: string[];
+}
+
+export interface SessionScore {
+  p1: number;
+  p2: number;
+  draws: number;
 }
 
 export interface ThemePalette {
@@ -36,6 +43,7 @@ export interface ThemePalette {
   bgSidebar: string;
   bgSurface: string;
   bgSurfaceHover: string;
+  bgGlass: string;
   bgBoard: string;
   bgBoardAlt: string;
   border: string;
@@ -63,11 +71,12 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
   obsidian: {
     id: 'obsidian',
     label: 'Obsidian Studio',
-    bgApp: '#090D16',
-    bgSidebar: '#0E1422',
-    bgSurface: '#131B2E',
-    bgSurfaceHover: '#1A243C',
-    bgBoard: '#101829',
+    bgApp: '#070B14',
+    bgSidebar: '#0C1220',
+    bgSurface: '#121A2D',
+    bgSurfaceHover: '#19243D',
+    bgGlass: 'rgba(18, 26, 45, 0.78)',
+    bgBoard: '#0F172A',
     bgBoardAlt: '#1B2741',
     border: 'rgba(148, 163, 184, 0.14)',
     textPrimary: '#F8FAFC',
@@ -77,11 +86,11 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     boardNode: '#1E293B',
     p1Color: '#F8FAFC',
     p1Stroke: '#CBD5E1',
-    p1Glow: 'rgba(248, 250, 252, 0.35)',
+    p1Glow: 'rgba(248, 250, 252, 0.3)',
     p1Name: 'Ivory',
     p2Color: '#F59E0B',
     p2Stroke: '#D97706',
-    p2Glow: 'rgba(245, 158, 11, 0.4)',
+    p2Glow: 'rgba(245, 158, 11, 0.35)',
     p2Name: 'Amber',
     accent: '#38BDF8',
     accentSoft: 'rgba(56, 189, 248, 0.14)',
@@ -93,11 +102,12 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     id: 'birch',
     label: 'Nordic Birch',
     bgApp: '#F5F2EB',
-    bgSidebar: '#ECE7DC',
+    bgSidebar: '#ECE6DA',
     bgSurface: '#FFFFFF',
-    bgSurfaceHover: '#F0ECE1',
-    bgBoard: '#E8DFCE',
-    bgBoardAlt: '#D7CBB5',
+    bgSurfaceHover: '#F2EDE2',
+    bgGlass: 'rgba(255, 255, 255, 0.84)',
+    bgBoard: '#E7DEC9',
+    bgBoardAlt: '#D7CBB3',
     border: 'rgba(41, 37, 36, 0.12)',
     textPrimary: '#1C1917',
     textSecondary: '#44403C',
@@ -106,11 +116,11 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     boardNode: '#D6CCB8',
     p1Color: '#1C1917',
     p1Stroke: '#0C0A09',
-    p1Glow: 'rgba(28, 25, 23, 0.25)',
+    p1Glow: 'rgba(28, 25, 23, 0.22)',
     p1Name: 'Charcoal',
     p2Color: '#D95D39',
     p2Stroke: '#B54424',
-    p2Glow: 'rgba(217, 93, 57, 0.35)',
+    p2Glow: 'rgba(217, 93, 57, 0.3)',
     p2Name: 'Terracotta',
     accent: '#0F766E',
     accentSoft: 'rgba(15, 118, 110, 0.12)',
@@ -121,13 +131,14 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
   walnut: {
     id: 'walnut',
     label: 'Royal Walnut',
-    bgApp: '#14100E',
-    bgSidebar: '#1B1512',
+    bgApp: '#130F0D',
+    bgSidebar: '#1A1411',
     bgSurface: '#241C18',
-    bgSurfaceHover: '#2E241F',
+    bgSurfaceHover: '#2E231E',
+    bgGlass: 'rgba(36, 28, 24, 0.82)',
     bgBoard: '#291E18',
     bgBoardAlt: '#3D2D24',
-    border: 'rgba(212, 168, 83, 0.16)',
+    border: 'rgba(212, 168, 83, 0.17)',
     textPrimary: '#FAF5EE',
     textSecondary: '#D6CBC0',
     textMuted: '#8C7A6B',
@@ -135,11 +146,11 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     boardNode: '#3A2A21',
     p1Color: '#FAF5EE',
     p1Stroke: '#D6CBC0',
-    p1Glow: 'rgba(250, 245, 238, 0.3)',
+    p1Glow: 'rgba(250, 245, 238, 0.28)',
     p1Name: 'Pearl',
     p2Color: '#D4A853',
     p2Stroke: '#B08532',
-    p2Glow: 'rgba(212, 168, 83, 0.4)',
+    p2Glow: 'rgba(212, 168, 83, 0.35)',
     p2Name: 'Brass',
     accent: '#D4A853',
     accentSoft: 'rgba(212, 168, 83, 0.16)',

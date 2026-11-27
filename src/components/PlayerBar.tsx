@@ -6,6 +6,7 @@ interface PlayerBarProps {
   winner: Player | 'draw' | null;
   mode: GameMode;
   aiThinking: boolean;
+  localPlayer?: Player;
   theme: ThemePalette;
   p1Metric: string;
   p2Metric: string;
@@ -17,13 +18,22 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
   winner,
   mode,
   aiThinking,
+  localPlayer = 1,
   theme,
   p1Metric,
   p2Metric,
   statusHint,
 }) => {
-  const p1Label = mode === 'ai' ? `You (${theme.p1Name})` : `Player 1 (${theme.p1Name})`;
-  const p2Label = mode === 'ai' ? `AI (${theme.p2Name})` : `Player 2 (${theme.p2Name})`;
+  const p1Label = mode === 'ai'
+    ? `You (${theme.p1Name})`
+    : mode === 'online'
+      ? `${localPlayer === 1 ? 'You' : 'Opponent'} (${theme.p1Name})`
+      : `Player 1 (${theme.p1Name})`;
+  const p2Label = mode === 'ai'
+    ? `AI (${theme.p2Name})`
+    : mode === 'online'
+      ? `${localPlayer === 2 ? 'You' : 'Opponent'} (${theme.p2Name})`
+      : `Player 2 (${theme.p2Name})`;
 
   const isP1Active = winner === null && turn === 1;
   const isP2Active = winner === null && turn === 2;

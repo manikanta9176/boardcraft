@@ -96,7 +96,7 @@ export const MorrisBoard: React.FC<MorrisBoardProps> = ({
   const pieceRadius = state.variant === 'three-mens-morris' ? 5.6 : state.variant === 'six-mens-morris' ? 4.8 : 4.1;
 
   return (
-    <div className="w-full max-w-[490px] mx-auto flex flex-col gap-3">
+    <div className="w-full mx-auto flex flex-col gap-3" style={{ maxWidth: 'min(490px, max(240px, calc(100dvh - 360px)))' }}>
       {/* Top tray: Player 2 reserve */}
       <div className="flex items-center justify-between px-2">
         <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: theme.textMuted }}>

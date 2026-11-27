@@ -4,6 +4,7 @@ import {
   Bot,
   Menu,
   Palette,
+  Radio,
   RotateCcw,
   Undo2,
   Users,
@@ -23,10 +24,13 @@ interface GameHeaderProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   canUndo: boolean;
+  canReset: boolean;
   onUndo: () => void;
   onReset: () => void;
   onOpenRules: () => void;
   onOpenMobileMenu: () => void;
+  onOpenMultiplayer: () => void;
+  multiplayerConnected: boolean;
 }
 
 const themeOrder: ThemeId[] = ['obsidian', 'birch', 'walnut'];
@@ -42,10 +46,13 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   soundEnabled,
   onToggleSound,
   canUndo,
+  canReset,
   onUndo,
   onReset,
   onOpenRules,
   onOpenMobileMenu,
+  onOpenMultiplayer,
+  multiplayerConnected,
 }) => {
   const cycleTheme = () => {
     const idx = themeOrder.indexOf(theme.id);
@@ -85,33 +92,31 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Mode Switcher */}
-        <div
-          className="flex items-center p-0.5 rounded-lg"
-          style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}
-        >
-          <button
-            onClick={() => onModeChange('ai')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
-            style={{
-              backgroundColor: mode === 'ai' ? theme.accentSoft : 'transparent',
-              color: mode === 'ai' ? theme.accent : theme.textMuted,
-            }}
-          >
-            <Bot className="w-3.5 h-3.5" />
-            <span>vs AI</span>
-          </button>
-          <button
-            onClick={() => onModeChange('local')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
-            style={{
-              backgroundColor: mode === 'local' ? theme.accentSoft : 'transparent',
-              color: mode === 'local' ? theme.accent : theme.textMuted,
-            }}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>2P</span>
-          </button>
-        </div>
+        {mode === 'online' ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
+            <Radio className="w-3.5 h-3.5" />
+            <span>Online match</span>
+          </div>
+        ) : (
+          <div className="flex items-center p-0.5 rounded-lg" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+            <button
+              onClick={() => onModeChange('ai')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              style={{ backgroundColor: mode === 'ai' ? theme.accentSoft : 'transparent', color: mode === 'ai' ? theme.accent : theme.textMuted }}
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>vs AI</span>
+            </button>
+            <button
+              onClick={() => onModeChange('local')}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer"
+              style={{ backgroundColor: mode === 'local' ? theme.accentSoft : 'transparent', color: mode === 'local' ? theme.accent : theme.textMuted }}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>2P</span>
+            </button>
+          </div>
+        )}
 
         {/* Difficulty Switcher (AI mode) */}
         {mode === 'ai' && (
@@ -137,9 +142,21 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
+          {!multiplayerConnected && (
+            <button
+              onClick={onOpenMultiplayer}
+              aria-label="Invite a friend to play online"
+              title="Invite a friend"
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-semibold cursor-pointer"
+              style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}
+            >
+              <Radio className="w-4 h-4" />
+              <span className="hidden sm:inline">Invite</span>
+            </button>
+          )}
           <button
             onClick={onUndo}
-            disabled={!canUndo}
+            disabled={!canUndo || multiplayerConnected}
             title="Undo Move"
             className="p-2 rounded-lg transition-opacity cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
@@ -152,8 +169,9 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </button>
           <button
             onClick={onReset}
+            disabled={!canReset}
             title="Restart Game"
-            className="p-2 rounded-lg transition-colors cursor-pointer"
+            className="p-2 rounded-lg transition-colors cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
             style={{
               backgroundColor: theme.bgSurface,
               color: theme.textSecondary,
@@ -189,6 +207,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </button>
           <button
             onClick={onOpenRules}
+            aria-label="Show game rules"
             className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium cursor-pointer"
             style={{
               backgroundColor: theme.bgSurface,

@@ -24,7 +24,7 @@ export const Connect4Board: React.FC<Connect4BoardProps> = ({
     state.lastMove !== null && state.lastMove[0] === r && state.lastMove[1] === c;
 
   return (
-    <div className="w-full max-w-[520px] mx-auto select-none">
+    <div className="w-full mx-auto select-none" style={{ maxWidth: 'min(520px, max(260px, calc(100dvh - 360px)))' }}>
       {/* Hover preview row */}
       <div className="grid grid-cols-7 gap-2 sm:gap-2.5 px-3 sm:px-4 mb-2 h-9 sm:h-11 items-center">
         {Array.from({ length: C4_COLS }).map((_, c) => {

@@ -36,7 +36,7 @@ export const GomokuBoard: React.FC<GomokuBoardProps> = ({
     state.lastMove !== null && state.lastMove[0] === r && state.lastMove[1] === c;
 
   return (
-    <div className="w-full max-w-[530px] mx-auto select-none">
+    <div className="w-full mx-auto select-none" style={{ maxWidth: 'min(530px, max(260px, calc(100dvh - 360px)))' }}>
       <div
         className="w-full aspect-square rounded-2xl p-3 sm:p-4 shadow-xl"
         style={{
