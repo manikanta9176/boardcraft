@@ -1,6 +1,6 @@
 import { GameId, Player } from '../types/game';
 
-export type TransportKind = 'online-room' | 'hotspot-direct';
+export type TransportKind = 'online-room' | 'hotspot-direct' | 'nearby-discovery';
 
 export type ConnectionPhase =
   | 'idle'

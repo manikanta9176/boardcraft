@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Check,
   Camera,
@@ -6,6 +6,7 @@ import {
   Globe,
   Link2,
   Loader2,
+  Search,
   Radio,
   Share2,
   Sparkles,
@@ -14,17 +15,21 @@ import {
   X,
 } from 'lucide-react';
 import { ConnectionPhase, TransportKind, buildRoomInviteUrl, normalizeRoomCode } from '../multiplayer/types';
-import { ThemePalette } from '../types/game';
+import { GameId, ThemePalette } from '../types/game';
+import { GAMES } from '../games/registry';
+import { findNearbyGames, NearbyGameListing } from '../multiplayer/nearbyDiscovery';
 import { QrCodeBox } from './QrCodeBox';
 import { NearbyQrScanner } from './NearbyQrScanner';
 import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 interface MultiplayerModalProps {
   theme: ThemePalette;
+  gameId: GameId;
   initialTab: 'online' | 'hotspot';
   initialJoinCode?: string;
   phase: ConnectionPhase;
   transportKind: TransportKind | null;
+  nearbyHostActive: boolean;
   roomCode: string;
   hotspotOfferCode: string;
   hotspotAnswerCode: string;
@@ -32,6 +37,8 @@ interface MultiplayerModalProps {
   onClose: () => void;
   onCreateRoom: () => void;
   onJoinRoom: (code: string) => void;
+  onStartNearbyHost: (gameId: GameId) => void;
+  onJoinNearbyGame: (room: NearbyGameListing) => void;
   onStartHotspotHost: () => void;
   onAcceptHotspotAnswer: (answerCode: string) => void;
   onJoinHotspotOffer: (offerCode: string) => void;
@@ -40,10 +47,12 @@ interface MultiplayerModalProps {
 
 export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   theme,
+  gameId,
   initialTab,
   initialJoinCode = '',
   phase,
   transportKind,
+  nearbyHostActive,
   roomCode,
   hotspotOfferCode,
   hotspotAnswerCode,
@@ -51,6 +60,8 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   onClose,
   onCreateRoom,
   onJoinRoom,
+  onStartNearbyHost,
+  onJoinNearbyGame,
   onStartHotspotHost,
   onAcceptHotspotAnswer,
   onJoinHotspotOffer,
@@ -65,7 +76,13 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [scanTarget, setScanTarget] = useState<'offer' | 'answer' | null>(null);
   const [manualEntry, setManualEntry] = useState(false);
+  const [useQrFallback, setUseQrFallback] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [hostGameId, setHostGameId] = useState<GameId>(gameId);
+  const [nearbyRooms, setNearbyRooms] = useState<NearbyGameListing[]>([]);
+  const [nearbySearchActive, setNearbySearchActive] = useState(false);
+  const [nearbySearchLoading, setNearbySearchLoading] = useState(false);
+  const [nearbySearchError, setNearbySearchError] = useState<string | null>(null);
 
   const inviteUrl = roomCode ? buildRoomInviteUrl(roomCode) : '';
 
@@ -112,6 +129,26 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
 
   const isBusy = phase === 'initializing' || phase === 'connecting';
 
+  const refreshNearbyGames = useCallback(async () => {
+    setNearbySearchLoading(true);
+    try {
+      setNearbyRooms(await findNearbyGames());
+      setNearbySearchError(null);
+    } catch (error) {
+      setNearbySearchActive(false);
+      setNearbySearchError(error instanceof Error ? error.message : 'Nearby discovery is temporarily unavailable.');
+    } finally {
+      setNearbySearchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!nearbySearchActive || tab !== 'hotspot' || hotspotSubMode !== 'guest' || useQrFallback) return;
+    void refreshNearbyGames();
+    const timer = window.setInterval(() => void refreshNearbyGames(), 5000);
+    return () => window.clearInterval(timer);
+  }, [hotspotSubMode, nearbySearchActive, refreshNearbyGames, tab, useQrFallback]);
+
   return (
     <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
@@ -145,7 +182,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
               <h2 id="multiplayer-title" className="text-lg font-bold tracking-tight">Play with a friend</h2>
             </div>
             <p id="multiplayer-description" className="text-xs mt-1" style={{ color: theme.textMuted }}>
-              No account needed. Online rooms need internet; nearby play uses the same Wi-Fi or hotspot.
+              Online rooms work over the internet. Nearby play finds friends on your Wi-Fi or hotspot, then sends moves directly between devices.
             </p>
           </div>
           <button
@@ -167,7 +204,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
           <button
             onClick={() => setTab('online')}
             disabled={phase === 'connected'}
-            className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            className="flex min-h-11 items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer"
             style={{
               backgroundColor: tab === 'online' ? theme.bgSurface : 'transparent',
               color: tab === 'online' ? theme.accent : theme.textMuted,
@@ -180,7 +217,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
           <button
             onClick={() => setTab('hotspot')}
             disabled={phase === 'connected'}
-            className="flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer"
+            className="flex min-h-11 items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer"
             style={{
               backgroundColor: tab === 'hotspot' ? theme.bgSurface : 'transparent',
               color: tab === 'hotspot' ? theme.validHighlight : theme.textMuted,
@@ -367,7 +404,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
               className="rounded-xl px-3.5 py-2.5 text-xs leading-relaxed"
               style={{ backgroundColor: theme.bgBoard, color: theme.textSecondary, border: `1px solid ${theme.border}` }}
             >
-              <strong>Play side by side:</strong> Browsers can&apos;t list nearby players over Wi-Fi or Bluetooth. Join the same network, scan the host QR, then let the host scan the reply. Moves travel directly between devices.
+              <strong>Same-place play:</strong> Put both devices on the same Wi-Fi or hotspot. Internet is used only to find each other; the game connection stays direct between devices.
             </div>
 
             {scanError && (
@@ -383,8 +420,8 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
               {(['host', 'guest'] as const).map((role) => (
                 <button
                   key={role}
-                  onClick={() => { setHotspotSubMode(role); setManualEntry(false); setScanTarget(null); setScanError(null); }}
-                  className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer capitalize"
+                  onClick={() => { setHotspotSubMode(role); setManualEntry(false); setScanTarget(null); setScanError(null); setNearbySearchActive(false); setNearbySearchError(null); }}
+                  className="flex min-h-11 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold cursor-pointer capitalize"
                   style={{
                     backgroundColor: hotspotSubMode === role ? theme.accentSoft : theme.bgBoard,
                     color: hotspotSubMode === role ? theme.accent : theme.textMuted,
@@ -396,6 +433,11 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
               ))}
             </div>
 
+            {useQrFallback ? (
+              <>
+                <div className="rounded-xl px-3.5 py-2.5 text-xs leading-relaxed" style={{ backgroundColor: theme.accentSoft, color: theme.textSecondary, border: `1px solid ${theme.accent}44` }}>
+                  <strong style={{ color: theme.accent }}>Offline pairing:</strong> Use the QR offer and reply if the devices have no internet connection.
+                </div>
             {scanTarget ? (
               <NearbyQrScanner
                 theme={theme}
@@ -427,6 +469,9 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                       <p className="mt-1 text-xs" style={{ color: theme.textMuted }}>Both devices need to be on the same Wi-Fi or hotspot.</p>
                     </div>
                     <div className="flex justify-center"><QrCodeBox value={hotspotOfferCode} size={220} label="QR code for a friend to scan and join this local game" /></div>
+                    <button onClick={onResetConnection} className="w-full rounded-xl px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.captureHighlight, border: `1px solid ${theme.border}` }}>
+                      Cancel offline pairing
+                    </button>
                     <div className="grid gap-2 sm:grid-cols-2">
                       <button onClick={() => openScanner('answer')} className="flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.accent, color: theme.bgApp }}>
                         <ScanLine className="h-4 w-4" /> Scan their reply
@@ -461,6 +506,9 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                       <p className="mt-1 text-xs" style={{ color: theme.textSecondary }}>The host scans it to finish connecting. Keep this screen open.</p>
                     </div>
                     <div className="flex justify-center"><QrCodeBox value={hotspotAnswerCode} size={220} label="QR code for the host to scan and finish local pairing" /></div>
+                    <button onClick={onResetConnection} className="w-full rounded-xl px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.captureHighlight, border: `1px solid ${theme.border}` }}>
+                      Cancel offline pairing
+                    </button>
                     <div className="flex justify-center">
                       <button onClick={() => setManualEntry((open) => !open)} className="flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
                         <Copy className="h-4 w-4" /> {manualEntry ? 'Hide text fallback' : 'Text fallback'}
@@ -496,11 +544,114 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                 )}
               </div>
             )}
-            {(hotspotOfferCode || hotspotAnswerCode) && (
-              <div className="text-right">
-                <button onClick={onResetConnection} className="text-xs underline" style={{ color: theme.textMuted }}>Cancel nearby game</button>
+                <button onClick={() => { if (transportKind === 'hotspot-direct') onResetConnection(); setUseQrFallback(false); setScanTarget(null); setScanError(null); }} className="w-full py-2 text-xs font-medium underline" style={{ color: theme.textMuted }}>
+                  Back to Find nearby
+                </button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                {hotspotSubMode === 'host' ? (
+                  nearbyHostActive ? (
+                    <div className="space-y-3 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.validHighlight}55` }}>
+                      <div className="flex items-center gap-2 text-sm font-bold" style={{ color: theme.validHighlight }}>
+                        <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: theme.validHighlight }} />
+                        Nearby game is visible
+                      </div>
+                      <p className="text-xs leading-relaxed" style={{ color: theme.textSecondary }}>
+                        Your {GAMES.find((game) => game.id === gameId)?.shortName ?? 'board'} is listed for players on this network. Keep this screen open while they join.
+                      </p>
+                      <button onClick={onResetConnection} className="min-h-11 w-full rounded-xl px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.captureHighlight, border: `1px solid ${theme.border}` }}>
+                        Stop hosting
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+                      <div>
+                        <div className="text-sm font-bold" style={{ color: theme.textPrimary }}>Host a nearby game</div>
+                        <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.textSecondary }}>Choose a board, then friends on the same Wi-Fi or hotspot can find and join it.</p>
+                      </div>
+                      <label className="block text-xs font-semibold" htmlFor="nearby-host-game" style={{ color: theme.textMuted }}>Game</label>
+                      <select
+                        id="nearby-host-game"
+                        value={hostGameId}
+                        onChange={(event) => setHostGameId(event.target.value as GameId)}
+                        className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
+                        style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
+                      >
+                        {GAMES.map((game) => <option key={game.id} value={game.id}>{game.shortName}</option>)}
+                      </select>
+                      <button onClick={() => onStartNearbyHost(hostGameId)} disabled={isBusy} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-50" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
+                        {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wifi className="h-4 w-4" />}
+                        {isBusy ? 'Opening nearby game…' : 'Start hosting'}
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <div className="space-y-3 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-bold" style={{ color: theme.textPrimary }}>Games on this network</div>
+                        <p className="mt-1 text-xs" style={{ color: theme.textSecondary }}>
+                          {nearbySearchActive ? 'Looking for a friend’s game…' : 'Start a search when both devices are on the same Wi-Fi or hotspot.'}
+                        </p>
+                      </div>
+                      {nearbySearchActive && (
+                        <button onClick={() => void refreshNearbyGames()} title="Refresh nearby games" aria-label="Refresh nearby games" className="grid min-h-11 min-w-11 shrink-0 place-items-center rounded-xl" style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
+                          <Search className={`h-4 w-4 ${nearbySearchLoading ? 'animate-pulse' : ''}`} />
+                        </button>
+                      )}
+                    </div>
+
+                    {!nearbySearchActive ? (
+                      <>
+                        <button onClick={() => { setNearbyRooms([]); setNearbySearchError(null); setNearbySearchActive(true); }} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
+                          <Search className="h-4 w-4" /> {nearbySearchError ? 'Try nearby search again' : 'Find nearby games'}
+                        </button>
+                        {nearbySearchError && (
+                          <div role="alert" className="rounded-xl px-3 py-2.5 text-xs" style={{ color: theme.captureHighlight, backgroundColor: `${theme.captureHighlight}1A` }}>
+                            {nearbySearchError}
+                          </div>
+                        )}
+                      </>
+                    ) : nearbySearchError ? (
+                      <div role="alert" className="rounded-xl px-3 py-2.5 text-xs" style={{ color: theme.captureHighlight, backgroundColor: `${theme.captureHighlight}1A` }}>
+                        {nearbySearchError}
+                      </div>
+                    ) : nearbyRooms.length === 0 ? (
+                      <div role="status" aria-live="polite" className="rounded-xl px-3 py-3 text-center text-xs" style={{ color: theme.textMuted, backgroundColor: theme.bgSurface }}>
+                        {nearbySearchLoading ? 'Searching…' : 'No games found yet. Ask your friend to start hosting.'}
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {nearbyRooms.map((room) => {
+                          const game = GAMES.find((entry) => entry.id === room.gameId);
+                          return (
+                            <div key={room.hostId} className="flex items-center justify-between gap-3 rounded-xl p-3" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold" style={{ color: theme.textPrimary }}>{game?.shortName ?? 'Board game'}</div>
+                                <div className="mt-0.5 text-[11px]" style={{ color: theme.textMuted }}>One player is waiting</div>
+                              </div>
+                              <button onClick={() => { setNearbySearchActive(false); onJoinNearbyGame(room); }} disabled={isBusy} className="min-h-11 shrink-0 rounded-lg px-4 text-xs font-bold" style={{ backgroundColor: theme.accent, color: theme.bgApp }}>
+                                Join
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {nearbySearchActive && (
+                      <button onClick={() => { setNearbySearchActive(false); setNearbyRooms([]); }} className="w-full py-1 text-xs underline" style={{ color: theme.textMuted }}>
+                        Stop searching
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
+            <button onClick={() => { if (transportKind === 'nearby-discovery') onResetConnection(); setNearbySearchActive(false); setUseQrFallback(true); }} className="w-full py-2 text-xs font-medium underline" style={{ color: theme.textMuted }}>
+              No internet? Use offline QR pairing
+            </button>
           </div>
         )}
         </div>

@@ -150,9 +150,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
       <section className="local-play-callout mt-7 sm:mt-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[24px] px-4 sm:px-5 py-4" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ color: theme.accent, backgroundColor: theme.accentSoft }}><Wifi className="w-4 h-4" /></div>
-          <div><h3 className="text-sm font-bold" style={{ color: theme.textPrimary }}>Across the table?</h3><p className="text-xs mt-1" style={{ color: theme.textMuted }}>Play side by side on the same Wi-Fi or hotspot with a quick QR scan.</p></div>
+          <div><h3 className="text-sm font-bold" style={{ color: theme.textPrimary }}>Across the table?</h3><p className="text-xs mt-1" style={{ color: theme.textMuted }}>Find a game on the same Wi-Fi or hotspot and join directly. Offline QR pairing is there when internet isn&apos;t.</p></div>
         </div>
-        <button onClick={() => onOpenMultiplayer('hotspot')} className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-full px-5 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Wifi className="w-3.5 h-3.5" />Nearby play</button>
+        <button onClick={() => onOpenMultiplayer('hotspot')} className="inline-flex min-h-11 items-center justify-center gap-2 self-start sm:self-auto rounded-full px-5 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Wifi className="w-3.5 h-3.5" />Find nearby games</button>
       </section>
     </div>
   );

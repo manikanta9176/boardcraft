@@ -140,3 +140,115 @@ export function joinOnlineRoom(code: string, cb: PeerCallbacks): ActiveTransport
     },
   };
 }
+
+const LOCAL_ONLY_CONFIG: RTCConfiguration = { iceServers: [] };
+
+export function nearbyPeerId(hostId: string): string {
+  return `bc-nearby-${hostId}`;
+}
+
+export function hostNearbyGame(hostId: string, cb: PeerCallbacks): ActiveTransport {
+  const peer = new Peer(nearbyPeerId(hostId), { debug: 0, config: LOCAL_ONLY_CONFIG });
+  let activeConn: DataConnection | null = null;
+  let closed = false;
+
+  const wireConn = (conn: DataConnection) => {
+    activeConn = conn;
+    conn.on('open', () => {
+      if (!closed) cb.onConnected();
+    });
+    conn.on('data', (data) => {
+      if (!closed && data && typeof data === 'object' && 'type' in data) {
+        cb.onMessage(data as NetMessage);
+      }
+    });
+    conn.on('close', () => {
+      if (activeConn === conn) activeConn = null;
+      if (!closed) cb.onDisconnected('The nearby player left the game.');
+    });
+    conn.on('error', (error) => {
+      if (!closed) cb.onError(error.message || 'The nearby connection failed.');
+    });
+  };
+
+  peer.on('open', () => {
+    if (!closed) cb.onWaiting?.();
+  });
+  peer.on('connection', (conn) => {
+    if (activeConn) {
+      conn.close();
+      return;
+    }
+    wireConn(conn);
+  });
+  peer.on('error', (error) => {
+    if (!closed) cb.onError(error.message || 'Could not start nearby play.');
+  });
+
+  return {
+    send: (message) => {
+      if (activeConn?.open) activeConn.send(message);
+    },
+    close: () => {
+      closed = true;
+      activeConn?.close();
+      peer.destroy();
+    },
+  };
+}
+
+export function joinNearbyGame(targetPeerId: string, cb: PeerCallbacks): ActiveTransport {
+  const peer = new Peer({ debug: 0, config: LOCAL_ONLY_CONFIG });
+  let activeConn: DataConnection | null = null;
+  let closed = false;
+  let connectedOnce = false;
+
+  const timeout = window.setTimeout(() => {
+    if (connectedOnce || closed) return;
+    cb.onError('Could not reach that nearby player. Check that both devices are on the same Wi-Fi or hotspot.');
+    peer.destroy();
+  }, 14000);
+
+  peer.on('open', () => {
+    if (closed) return;
+    const conn = peer.connect(targetPeerId, { reliable: true });
+    activeConn = conn;
+    conn.on('open', () => {
+      connectedOnce = true;
+      window.clearTimeout(timeout);
+      if (!closed) cb.onConnected();
+    });
+    conn.on('data', (data) => {
+      if (!closed && data && typeof data === 'object' && 'type' in data) {
+        cb.onMessage(data as NetMessage);
+      }
+    });
+    conn.on('close', () => {
+      window.clearTimeout(timeout);
+      if (!closed) cb.onDisconnected('The nearby player left the game.');
+    });
+    conn.on('error', (error) => {
+      window.clearTimeout(timeout);
+      if (!closed) cb.onError(error.message || 'Could not connect to that nearby player.');
+    });
+  });
+  peer.on('error', (error) => {
+    window.clearTimeout(timeout);
+    if (closed) return;
+    cb.onError(error.type === 'peer-unavailable'
+      ? 'That nearby game is no longer available. Refresh the list and try again.'
+      : error.message || 'Could not connect to that nearby player.');
+  });
+
+  return {
+    send: (message) => {
+      if (activeConn?.open) activeConn.send(message);
+    },
+    close: () => {
+      closed = true;
+      window.clearTimeout(timeout);
+      activeConn?.close();
+      peer.destroy();
+    },
+  };
+}

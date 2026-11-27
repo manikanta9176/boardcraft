@@ -21,7 +21,8 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 ## Features
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
-- **Nearby Wi-Fi / Hotspot Play** with camera-assisted QR pairing between devices on the same network
+- **Find Nearby** to list games hosted on the same Wi-Fi or hotspot, then connect directly device-to-device
+- **Offline QR Pairing** as a no-internet fallback for nearby devices
 - **Light / Dark Mode**: Paper & Ink for light mode and Carbon Ember for dark mode, inspired by StackDome's warm charcoal and ember palette
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
@@ -32,9 +33,23 @@ Progress and preferences stay in versioned browser storage on the current device
 
 ## Multiplayer Notes
 
-- Online rooms use PeerJS signaling to find one another and WebRTC data channels to exchange moves. No BoardCraft account or application server is required. The browser may use STUN/TURN services to establish a connection, and some network settings can prevent a match from connecting.
-- Browsers do not expose a cross-device Wi-Fi or Bluetooth player-discovery API, so local pairing uses QR codes instead of a nearby-device list. Nearby pairing uses WebRTC host candidates only. Put both devices on the same Wi-Fi or hotspot, scan the host QR, then let the host scan the reply QR. BoardCraft asks for camera access only when scanning; the QR is decoded on-device. No internet signaling is used for this local match, though some hotspot networks block device-to-device traffic.
-- Room codes are temporary. Keep the host page open until the other player joins; rooms are not saved or listed publicly.
+- **Find Nearby** uses a short-lived lobby on the deployed site to list games on the same public network address (or IPv6 network prefix). Both devices need internet access to discover one another; gameplay then uses a direct WebRTC connection with local network candidates. Listings expire after a minute, and only the host can remove one. The API stores a keyed hash of the network address rather than the raw address. This is network discovery, not Bluetooth-range discovery, so devices behind the same shared public network may also see one another.
+- **Offline QR Pairing** works without the lobby or internet. Put both devices on the same Wi-Fi or hotspot, scan the host offer QR, then let the host scan the reply QR. Camera access is requested only when scanning; pairing codes are decoded on-device. Some hotspot networks block direct device-to-device traffic.
+- **Online Rooms** use PeerJS signaling and WebRTC to connect players over the internet. Room codes are temporary; keep the host page open until the other player joins. Matches are not saved as rooms or listed publicly.
+
+## Configure Nearby Discovery on Vercel
+
+The app itself is static, but Find Nearby needs a small serverless API and a Redis-backed presence store. Create an Upstash Redis database, then add these environment variables to the Vercel project for **Production**, **Preview**, and **Development** as needed:
+
+| Variable | Value |
+| --- | --- |
+| `UPSTASH_REDIS_REST_URL` | Upstash database REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash database REST token |
+| `BOARDCRAFT_NEARBY_SECRET` | A private random secret; generate one with `openssl rand -hex 32` |
+
+Redeploy after adding the variables. `Online Rooms` and offline QR pairing do not depend on Redis. Without the variables, the Nearby screen shows a setup error and still offers offline QR pairing.
+
+For local API development, use the Vercel CLI (`npx vercel dev`) so `/api/nearby` runs alongside Vite. `npm run dev` alone serves the client only.
 
 ## Local Development
 
@@ -52,4 +67,4 @@ npm run build
 
 ## Deploy to Vercel
 
-Import this repository into [Vercel](https://vercel.com) — `vercel.json` is preconfigured for Vite static builds.
+Import this repository into [Vercel](https://vercel.com) — `vercel.json` is preconfigured for Vite builds and the `/api/nearby` serverless function.

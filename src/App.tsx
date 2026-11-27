@@ -69,8 +69,9 @@ import {
 import { Difficulty, GameId, GameMode, Player, THEMES, ThemeId } from './types/game';
 import { sound } from './utils/sound';
 import { applyRemoteMove } from './games/stateTypes';
-import { ActiveTransport, PeerCallbacks, hostOnlineRoom, joinOnlineRoom } from './multiplayer/onlinePeer';
+import { ActiveTransport, PeerCallbacks, hostNearbyGame, hostOnlineRoom, joinNearbyGame, joinOnlineRoom } from './multiplayer/onlinePeer';
 import { HotspotHostSession, createHotspotHostSession, joinHotspotOffer } from './multiplayer/hotspotDirect';
+import { NearbyGameListing, createNearbyHostCredentials, publishNearbyGame, removeNearbyGame } from './multiplayer/nearbyDiscovery';
 import {
   ConnectionPhase,
   NetMessage,
@@ -244,6 +245,7 @@ export function App() {
   const aiTimerRef = useRef<number | null>(null);
   const transportRef = useRef<ActiveTransport | null>(null);
   const hotspotHostRef = useRef<HotspotHostSession | null>(null);
+  const nearbyHostRef = useRef<{ hostId: string; hostToken: string; gameId: GameId; active: boolean; heartbeat: number | null } | null>(null);
   const roomCodeRef = useRef(boot.route.roomCode ?? '');
   const gameStateRef = useRef(gameState);
   const activeGameIdRef = useRef(activeGameId);
@@ -320,7 +322,15 @@ export function App() {
   const sendNetworkMessage = useCallback((message: NetMessage) => {
     transportRef.current?.send(message);
   }, []);
-  const closeMultiplayer = useCallback(() => setMultiplayerOpen(false), []);
+  const stopNearbyPresence = useCallback(() => {
+    const session = nearbyHostRef.current;
+    if (!session) return;
+    session.active = false;
+    if (session.heartbeat !== null) window.clearInterval(session.heartbeat);
+    nearbyHostRef.current = null;
+    void removeNearbyGame(session.hostId, session.hostToken);
+  }, []);
+  useEffect(() => () => stopNearbyPresence(), [stopNearbyPresence]);
   const closeRules = useCallback(() => setRulesOpen(false), []);
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
   const openLibrary = useCallback(() => {
@@ -331,6 +341,7 @@ export function App() {
   }, [mode]);
 
   const resetConnection = useCallback(() => {
+    stopNearbyPresence();
     transportRef.current?.close();
     transportRef.current = null;
     hotspotHostRef.current = null;
@@ -345,11 +356,22 @@ export function App() {
     setIsHost(false);
     setHostPlayer(1);
     setMode((current) => current === 'online' ? 'local' : current);
-  }, []);
+  }, [stopNearbyPresence]);
 
-  const createPeerCallbacks = useCallback((host: boolean): PeerCallbacks => ({
-    onWaiting: () => setConnectionPhase('waiting'),
+  const closeMultiplayer = useCallback(() => {
+    if (connectionPhase !== 'connected' && (transportKind === 'nearby-discovery' || transportKind === 'hotspot-direct')) {
+      resetConnection();
+    }
+    setMultiplayerOpen(false);
+  }, [connectionPhase, resetConnection, transportKind]);
+
+  const createPeerCallbacks = useCallback((host: boolean, afterWaiting?: () => void): PeerCallbacks => ({
+    onWaiting: () => {
+      setConnectionPhase('waiting');
+      afterWaiting?.();
+    },
     onConnected: () => {
+      if (host) stopNearbyPresence();
       setConnectionPhase('connected');
       setConnectionError(null);
       setMode('online');
@@ -461,6 +483,7 @@ export function App() {
       }
     },
     onDisconnected: (reason) => {
+      stopNearbyPresence();
       setConnectionError(reason ?? 'The other player disconnected.');
       setConnectionPhase('error');
       setRoomCode('');
@@ -470,10 +493,11 @@ export function App() {
       setMultiplayerOpen(true);
     },
     onError: (message) => {
+      stopNearbyPresence();
       setConnectionError(message);
       setConnectionPhase('error');
     },
-  }), [sendNetworkMessage]);
+  }), [sendNetworkMessage, stopNearbyPresence]);
 
   const openMultiplayer = (tab: 'online' | 'hotspot' = 'online', gameId?: GameId) => {
     if (gameId) {
@@ -517,6 +541,87 @@ export function App() {
     setIsHost(false);
     const transport = joinOnlineRoom(normalized, createPeerCallbacks(false));
     transportRef.current = transport;
+  };
+
+  const startNearbyHost = (targetGameId: GameId) => {
+    resetConnection();
+    const { hostId, hostToken } = createNearbyHostCredentials();
+    const initial = createInitialGameState(targetGameId);
+    activeGameIdRef.current = targetGameId;
+    gameStateRef.current = initial;
+    setActiveGameId(targetGameId);
+    setGameState(initial);
+    setHistory([]);
+    setCheckersSelected(null);
+    setShowLobby(false);
+    setNotFoundPath(null);
+    setMode('local');
+    writeBoardCraftRoute({ screen: 'game', gameId: targetGameId, mode: 'local' }, true);
+
+    setConnectionError(null);
+    setConnectionPhase('initializing');
+    setTransportKind('nearby-discovery');
+    setRoomCode('');
+    roomCodeRef.current = '';
+    setIsHost(true);
+    setHostPlayer(1);
+    hostPlayerRef.current = 1;
+
+    const session = { hostId, hostToken, gameId: targetGameId, active: true, heartbeat: null as number | null };
+    nearbyHostRef.current = session;
+    const advertise = async () => {
+      if (!session.active) return;
+      try {
+        await publishNearbyGame(hostId, hostToken, targetGameId);
+        if (!session.active) {
+          void removeNearbyGame(hostId, hostToken);
+          return;
+        }
+        if (session.heartbeat === null) {
+          session.heartbeat = window.setInterval(() => {
+            void publishNearbyGame(hostId, hostToken, targetGameId).catch((error: unknown) => {
+              if (!session.active) return;
+              setConnectionError(error instanceof Error ? error.message : 'Nearby discovery was interrupted.');
+              setConnectionPhase('error');
+              stopNearbyPresence();
+              transportRef.current?.close();
+            });
+          }, 15_000);
+        }
+      } catch (error) {
+        if (!session.active) return;
+        setConnectionError(error instanceof Error ? error.message : 'Could not start nearby discovery.');
+        setConnectionPhase('error');
+        stopNearbyPresence();
+        transportRef.current?.close();
+      }
+    };
+
+    transportRef.current = hostNearbyGame(hostId, createPeerCallbacks(true, () => void advertise()));
+  };
+
+  const joinNearby = (room: NearbyGameListing) => {
+    resetConnection();
+    const initial = createInitialGameState(room.gameId);
+    activeGameIdRef.current = room.gameId;
+    gameStateRef.current = initial;
+    setActiveGameId(room.gameId);
+    setGameState(initial);
+    setHistory([]);
+    setCheckersSelected(null);
+    setNotFoundPath(null);
+    setShowLobby(false);
+    setMode('local');
+
+    setConnectionError(null);
+    setConnectionPhase('connecting');
+    setTransportKind('nearby-discovery');
+    setRoomCode('');
+    roomCodeRef.current = '';
+    setIsHost(false);
+    setHostPlayer(1);
+    hostPlayerRef.current = 1;
+    transportRef.current = joinNearbyGame(room.peerId, createPeerCallbacks(false));
   };
 
   const startHotspotHost = async () => {
@@ -1190,8 +1295,10 @@ export function App() {
             theme={theme}
             initialTab={multiplayerTab}
             initialJoinCode={inviteJoinCode}
+            gameId={activeGameId}
             phase={connectionPhase}
             transportKind={transportKind}
+            nearbyHostActive={transportKind === 'nearby-discovery' && connectionPhase === 'waiting' && isHost}
             roomCode={roomCode}
             hotspotOfferCode={hotspotOfferCode}
             hotspotAnswerCode={hotspotAnswerCode}
@@ -1199,6 +1306,8 @@ export function App() {
             onClose={closeMultiplayer}
             onCreateRoom={createRoom}
             onJoinRoom={joinRoom}
+            onStartNearbyHost={startNearbyHost}
+            onJoinNearbyGame={joinNearby}
             onStartHotspotHost={startHotspotHost}
             onAcceptHotspotAnswer={acceptHotspotAnswer}
             onJoinHotspotOffer={joinHotspot}
