@@ -10,7 +10,6 @@ interface ThemeToggleProps {
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle }) => {
   const targetMode = theme.isDark ? 'light' : 'dark';
   const Icon = theme.isDark ? Sun : Moon;
-  const modeLabel = targetMode === 'light' ? 'Light' : 'Dark';
 
   return (
     <button
@@ -18,7 +17,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle }) => 
       onClick={onToggle}
       title={`Switch to ${targetMode} mode`}
       aria-label={`Switch to ${targetMode} mode`}
-      className="theme-toggle inline-flex min-h-11 min-w-[78px] items-center justify-center gap-2 rounded-full px-3 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="theme-toggle inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style={{
         backgroundColor: theme.bgSurface,
         color: theme.textPrimary,
@@ -27,7 +26,6 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({ theme, onToggle }) => 
       }}
     >
       <Icon className="h-4 w-4" aria-hidden="true" />
-      <span>{modeLabel}</span>
     </button>
   );
 };
