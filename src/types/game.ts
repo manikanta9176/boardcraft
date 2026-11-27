@@ -1,7 +1,7 @@
 export type Player = 1 | 2;
 export type GameMode = 'ai' | 'local' | 'online';
 export type Difficulty = 'easy' | 'medium' | 'hard';
-export type ThemeId = 'stackdome' | 'obsidian';
+export type ThemeId = 'paper' | 'stackdome';
 
 export type GameId =
   | 'three-mens-morris'
@@ -68,6 +68,36 @@ export interface ThemePalette {
 }
 
 export const THEMES: Record<ThemeId, ThemePalette> = {
+  paper: {
+    id: 'paper',
+    label: 'Paper & Ink',
+    bgApp: '#F4F1EA',
+    bgSidebar: '#ECE8E0',
+    bgSurface: '#FFFCF8',
+    bgSurfaceHover: '#F0EDE7',
+    bgGlass: 'rgba(250, 248, 244, 0.9)',
+    bgBoard: '#EEEAE3',
+    bgBoardAlt: '#DDD9D1',
+    border: 'rgba(22, 21, 19, 0.1)',
+    textPrimary: '#161513',
+    textSecondary: '#5F5B55',
+    textMuted: '#858078',
+    boardLine: '#99958D',
+    boardNode: '#D2CEC6',
+    p1Color: '#181715',
+    p1Stroke: '#090908',
+    p1Glow: 'rgba(22, 21, 19, 0.16)',
+    p1Name: 'Ink',
+    p2Color: '#6267F0',
+    p2Stroke: '#4D52D7',
+    p2Glow: 'rgba(98, 103, 240, 0.22)',
+    p2Name: 'Periwinkle',
+    accent: '#161513',
+    accentSoft: 'rgba(22, 21, 19, 0.075)',
+    validHighlight: '#6267F0',
+    captureHighlight: '#CC725E',
+    isDark: false,
+  },
   stackdome: {
     id: 'stackdome',
     label: 'Carbon Ember',
@@ -96,36 +126,6 @@ export const THEMES: Record<ThemeId, ThemePalette> = {
     accentSoft: 'rgba(255, 253, 247, 0.08)',
     validHighlight: '#C34200',
     captureHighlight: '#E66C2F',
-    isDark: true,
-  },
-  obsidian: {
-    id: 'obsidian',
-    label: 'Midnight Felt',
-    bgApp: '#08130F',
-    bgSidebar: '#0B1A15',
-    bgSurface: '#12231D',
-    bgSurfaceHover: '#1A3027',
-    bgGlass: 'rgba(18, 35, 29, 0.88)',
-    bgBoard: '#0D211A',
-    bgBoardAlt: '#1B352B',
-    border: 'rgba(195, 222, 199, 0.13)',
-    textPrimary: '#F1F5EC',
-    textSecondary: '#B7C6B8',
-    textMuted: '#758A7C',
-    boardLine: '#668272',
-    boardNode: '#203B30',
-    p1Color: '#F2E9D2',
-    p1Stroke: '#FFF5DD',
-    p1Glow: 'rgba(242, 233, 210, 0.28)',
-    p1Name: 'Ivory',
-    p2Color: '#F47C63',
-    p2Stroke: '#C95645',
-    p2Glow: 'rgba(244, 124, 99, 0.33)',
-    p2Name: 'Coral',
-    accent: '#D4EE79',
-    accentSoft: 'rgba(212, 238, 121, 0.13)',
-    validHighlight: '#A8D98A',
-    captureHighlight: '#F47C63',
     isDark: true,
   },
 };

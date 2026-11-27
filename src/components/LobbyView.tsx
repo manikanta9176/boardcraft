@@ -3,12 +3,14 @@ import { Bot, Clock3, Globe2, Grid3X3, Menu, RotateCcw, Users2, Wifi } from 'luc
 import { GAMES } from '../games/registry';
 import { GameCategory, GameId, ThemePalette } from '../types/game';
 import { GameArtwork } from './GameArtwork';
+import { ThemeToggle } from './ThemeToggle';
 
 interface LobbyViewProps {
   theme: ThemePalette;
   onLaunchGame: (id: GameId, mode: 'ai' | 'local') => void;
   onOpenMultiplayer: (tab: 'online' | 'hotspot', gameId?: GameId) => void;
   onOpenMenu: () => void;
+  onToggleTheme: () => void;
   resumeGameId: GameId | null;
   onResumeGame: () => void;
   storageUnavailable: boolean;
@@ -16,7 +18,7 @@ interface LobbyViewProps {
 
 const MARKED_GAME: GameId = 'nine-mens-morris';
 
-export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpenMultiplayer, onOpenMenu, resumeGameId, onResumeGame, storageUnavailable }) => {
+export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpenMultiplayer, onOpenMenu, onToggleTheme, resumeGameId, onResumeGame, storageUnavailable }) => {
   const [filter, setFilter] = useState<'all' | GameCategory>('all');
   const visibleGames = filter === 'all' ? GAMES : GAMES.filter((game) => game.category === filter);
   const featuredGame = GAMES.find((game) => game.id === MARKED_GAME) ?? GAMES[0];
@@ -25,13 +27,16 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
   const browseGames = () => document.getElementById('game-library')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
-    <div className="lobby-page w-full max-w-[1440px] mx-auto px-4 sm:px-7 xl:px-10 py-5 sm:py-8">
-      <div className="lg:hidden flex items-center gap-3 mb-5">
-        <button onClick={onOpenMenu} aria-label="Open game navigation" className="w-11 h-11 rounded-xl inline-flex items-center justify-center" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Menu className="w-4 h-4" /></button>
-        <div className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center" style={{ color: theme.accent, backgroundColor: theme.accentSoft, border: `1px solid ${theme.accent}38` }}><Grid3X3 className="w-4 h-4" /></span>
-          <span className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>BoardCraft</span>
+    <div className="lobby-page w-full max-w-[1440px] mx-auto px-4 sm:px-7 xl:px-10 py-5 sm:py-8" data-theme={theme.isDark ? 'dark' : 'light'}>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button onClick={onOpenMenu} aria-label="Open game navigation" className="lg:hidden w-11 h-11 rounded-xl inline-flex items-center justify-center" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Menu className="w-4 h-4" /></button>
+          <div className="flex items-center gap-2 lg:hidden">
+            <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center" style={{ color: theme.accent, backgroundColor: theme.accentSoft, border: `1px solid ${theme.accent}38` }}><Grid3X3 className="w-4 h-4" /></span>
+            <span className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>BoardCraft</span>
+          </div>
         </div>
+        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
       </div>
 
       <section className="lobby-hero relative isolate overflow-hidden rounded-[28px]" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} aria-labelledby="lobby-title">
@@ -89,7 +94,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
                 BOARD 09
               </div>
             </div>
-            <div className="hero-caption absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}`, boxShadow: `0 12px 30px ${theme.bgApp}66` }}>
+            <div className="hero-caption absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}`, boxShadow: theme.isDark ? '0 12px 30px rgba(0,0,0,.32)' : '0 12px 30px rgba(22,21,19,.1)' }}>
               {featuredGame.name}<span className="mx-2" style={{ color: theme.textMuted }}>·</span><span style={{ color: theme.textMuted }}>{featuredGame.duration}</span>
             </div>
           </div>

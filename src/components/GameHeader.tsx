@@ -3,7 +3,6 @@ import {
   BookOpen,
   Bot,
   Menu,
-  Palette,
   Radio,
   RotateCcw,
   Undo2,
@@ -11,7 +10,8 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react';
-import { Difficulty, GameMeta, GameMode, THEMES, ThemeId, ThemePalette } from '../types/game';
+import { Difficulty, GameMeta, GameMode, ThemePalette } from '../types/game';
+import { ThemeToggle } from './ThemeToggle';
 
 interface GameHeaderProps {
   game: GameMeta;
@@ -20,7 +20,7 @@ interface GameHeaderProps {
   difficulty: Difficulty;
   onDifficultyChange: (d: Difficulty) => void;
   theme: ThemePalette;
-  onThemeChange: (id: ThemeId) => void;
+  onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   canUndo: boolean;
@@ -33,8 +33,6 @@ interface GameHeaderProps {
   multiplayerConnected: boolean;
 }
 
-const themeOrder: ThemeId[] = ['stackdome', 'obsidian'];
-
 export const GameHeader: React.FC<GameHeaderProps> = ({
   game,
   mode,
@@ -42,7 +40,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   difficulty,
   onDifficultyChange,
   theme,
-  onThemeChange,
+  onToggleTheme,
   soundEnabled,
   onToggleSound,
   canUndo,
@@ -54,11 +52,6 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   onOpenMultiplayer,
   multiplayerConnected,
 }) => {
-  const cycleTheme = () => {
-    const idx = themeOrder.indexOf(theme.id);
-    onThemeChange(themeOrder[(idx + 1) % themeOrder.length]);
-  };
-
   return (
     <header
       className="match-header sticky top-0 z-20 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
@@ -188,20 +181,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           >
             <RotateCcw className="w-4 h-4" />
           </button>
-          <button
-            onClick={cycleTheme}
-            title={`Theme: ${THEMES[theme.id].label}`}
-            aria-label={`Change board theme. Current theme: ${theme.label}`}
-            className="flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-2.5 rounded-full text-xs font-medium cursor-pointer"
-            style={{
-              backgroundColor: theme.bgSurface,
-              color: theme.textSecondary,
-              border: `1px solid ${theme.border}`,
-            }}
-          >
-            <Palette className="w-4 h-4" />
-            <span className="hidden md:inline">{theme.label.split(' ')[0]}</span>
-          </button>
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <button
             onClick={onToggleSound}
             title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}

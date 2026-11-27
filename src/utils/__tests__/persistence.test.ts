@@ -24,8 +24,13 @@ describe('BoardCraft browser persistence', () => {
     values.set('boardcraft-sound', 'false');
     vi.resetModules();
     return import('../persistence').then(({ loadPreferences }) => {
-      expect(loadPreferences()).toEqual({ themeId: 'stackdome', soundEnabled: false, difficulty: 'medium', lastGameId: null });
+      expect(loadPreferences()).toEqual({ themeId: 'paper', soundEnabled: false, difficulty: 'medium', lastGameId: null });
     });
+  });
+
+  it('persists Paper & Ink as light mode', () => {
+    expect(persistence.savePreferences({ themeId: 'paper', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(true);
+    expect(persistence.loadPreferences().themeId).toBe('paper');
   });
 
   it('persists the StackDome-inspired dark theme preference', () => {
@@ -33,8 +38,16 @@ describe('BoardCraft browser persistence', () => {
     expect(persistence.loadPreferences().themeId).toBe('stackdome');
   });
 
-  it('moves previous light-theme preferences to the dark default', () => {
+  it('moves previous light-theme preferences to Paper & Ink', () => {
     values.set('boardcraft:preferences:v1', JSON.stringify({ version: 1, themeId: 'sea-glass', soundEnabled: true, difficulty: 'medium', lastGameId: null }));
+    vi.resetModules();
+    return import('../persistence').then(({ loadPreferences }) => {
+      expect(loadPreferences().themeId).toBe('paper');
+    });
+  });
+
+  it('moves previous dark-theme preferences to Carbon Ember', () => {
+    values.set('boardcraft:preferences:v1', JSON.stringify({ version: 1, themeId: 'obsidian', soundEnabled: true, difficulty: 'medium', lastGameId: null }));
     vi.resetModules();
     return import('../persistence').then(({ loadPreferences }) => {
       expect(loadPreferences().themeId).toBe('stackdome');
@@ -63,7 +76,7 @@ describe('BoardCraft browser persistence', () => {
     values.set('boardcraft:matches:v1', JSON.stringify({ version: 1, matches: { connect4: { state: null } } }));
     vi.resetModules();
     return import('../persistence').then(({ loadPreferences, loadSavedMatch }) => {
-      expect(loadPreferences().themeId).toBe('stackdome');
+      expect(loadPreferences().themeId).toBe('paper');
       expect(loadSavedMatch('connect4')).toBeNull();
     });
   });
@@ -79,6 +92,6 @@ describe('BoardCraft browser persistence', () => {
     vi.resetModules();
     const { loadPreferences, savePreferences } = await import('../persistence');
     expect(loadPreferences().soundEnabled).toBe(true);
-    expect(savePreferences({ themeId: 'obsidian', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(false);
+    expect(savePreferences({ themeId: 'stackdome', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(false);
   });
 });

@@ -22,7 +22,7 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
 - **Nearby Wi-Fi / Hotspot Play** with camera-assisted QR pairing between devices on the same network
-- **2 Dark Tabletop Themes**: Carbon Ember, inspired by StackDome's warm charcoal and ember palette, and Midnight Felt
+- **Light / Dark Mode**: Paper & Ink for light mode and Carbon Ember for dark mode, inspired by StackDome's warm charcoal and ember palette
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
 - **Direct game links** at `/play/<game-id>` with browser back and forward navigation

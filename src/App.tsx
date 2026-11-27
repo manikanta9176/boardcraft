@@ -254,6 +254,9 @@ export function App() {
   activeGameIdRef.current = activeGameId;
   hostPlayerRef.current = hostPlayer;
   const theme = THEMES[themeId];
+  const toggleTheme = useCallback(() => {
+    setThemeId((current) => current === 'paper' ? 'stackdome' : 'paper');
+  }, []);
   const activeMeta = useMemo(
     () => GAMES.find((g) => g.id === activeGameId) ?? GAMES[0],
     [activeGameId],
@@ -266,6 +269,10 @@ export function App() {
         ? 'BoardCraft — Classic Strategy, Morris & Online Multiplayer'
         : `${activeMeta.name} — BoardCraft`;
   }, [activeMeta.name, notFoundPath, showLobby]);
+
+  useEffect(() => {
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', theme.bgApp);
+  }, [theme.bgApp]);
 
   useEffect(() => {
     sound.enabled = soundEnabled;
@@ -1072,6 +1079,7 @@ export function App() {
                 onLaunchGame={launchGame}
                 onOpenMultiplayer={openMultiplayer}
                 onOpenMenu={() => setMobileMenuOpen(true)}
+                onToggleTheme={toggleTheme}
                 resumeGameId={resumeGameId}
                 onResumeGame={resumeLastGame}
                 storageUnavailable={storageUnavailable}
@@ -1087,7 +1095,7 @@ export function App() {
               difficulty={difficulty}
               onDifficultyChange={setDifficulty}
               theme={theme}
-              onThemeChange={setThemeId}
+              onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={() => setSoundEnabled((v) => !v)}
               canUndo={history.length > 0 && !aiThinking && mode !== 'online'}
