@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Check,
+  Camera,
   Copy,
   Globe,
   Link2,
@@ -8,12 +9,14 @@ import {
   Radio,
   Share2,
   Sparkles,
+  ScanLine,
   Wifi,
   X,
 } from 'lucide-react';
 import { ConnectionPhase, TransportKind, buildRoomInviteUrl, normalizeRoomCode } from '../multiplayer/types';
 import { ThemePalette } from '../types/game';
 import { QrCodeBox } from './QrCodeBox';
+import { NearbyQrScanner } from './NearbyQrScanner';
 import { useModalAccessibility } from '../hooks/useModalAccessibility';
 
 interface MultiplayerModalProps {
@@ -60,6 +63,9 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   const [offerInput, setOfferInput] = useState('');
   const [answerInput, setAnswerInput] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [scanTarget, setScanTarget] = useState<'offer' | 'answer' | null>(null);
+  const [manualEntry, setManualEntry] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const inviteUrl = roomCode ? buildRoomInviteUrl(roomCode) : '';
 
@@ -80,6 +86,28 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
     } catch {
       // User cancelled share sheet
     }
+  };
+
+  const handleScannedPairingQr = (value: string) => {
+    const target = scanTarget;
+    setScanTarget(null);
+    setScanError(null);
+    if (!value.startsWith('BC1:')) {
+      setScanError('That QR code is not a BoardCraft local pairing code. Scan the code shown in your friend’s game.');
+      return;
+    }
+    if (target === 'offer') onJoinHotspotOffer(value);
+    if (target === 'answer') onAcceptHotspotAnswer(value);
+  };
+
+  const openScanner = (target: 'offer' | 'answer') => {
+    setScanError(null);
+    setScanTarget(target);
+  };
+
+  const useManualEntry = () => {
+    setScanTarget(null);
+    setManualEntry(true);
   };
 
   const isBusy = phase === 'initializing' || phase === 'connecting';
@@ -114,7 +142,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
               <h2 id="multiplayer-title" className="text-lg font-bold tracking-tight">Play with a friend</h2>
             </div>
             <p id="multiplayer-description" className="text-xs mt-1" style={{ color: theme.textMuted }}>
-              No account needed. Online rooms need internet; local pairing uses the same Wi-Fi or hotspot.
+              No account needed. Online rooms need internet; nearby play uses the same Wi-Fi or hotspot.
             </p>
           </div>
           <button
@@ -156,7 +184,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
             }}
           >
             <Wifi className="w-3.5 h-3.5" />
-            <span>Local Wi-Fi</span>
+            <span>Nearby Wi-Fi</span>
           </button>
         </div>
 
@@ -328,21 +356,30 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
           </div>
         )}
 
-        {/* TAB 2: HOTSPOT DIRECT (OFFLINE ZERO-INTERNET) */}
+        {/* TAB 2: NEARBY LOCAL PLAY */}
         {phase !== 'connected' && tab === 'hotspot' && (
           <div className="space-y-4">
             <div
               className="rounded-xl px-3.5 py-2.5 text-xs leading-relaxed"
               style={{ backgroundColor: theme.bgBoard, color: theme.textSecondary, border: `1px solid ${theme.border}` }}
             >
-              <strong>Local pairing:</strong> Put both devices on the same Wi-Fi or hotspot, then exchange the offer and answer codes. Some hotspot networks block device-to-device traffic.
+              <strong>Play side by side:</strong> Browsers can&apos;t list nearby players over Wi-Fi or Bluetooth. Join the same network, scan the host QR, then let the host scan the reply. Moves travel directly between devices.
             </div>
+
+            {scanError && (
+              <div className="rounded-xl px-3.5 py-2.5 text-xs leading-relaxed" role="alert" style={{ backgroundColor: `${theme.captureHighlight}1A`, color: theme.captureHighlight, border: `1px solid ${theme.captureHighlight}55` }}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span>{scanError}</span>
+                  <button onClick={() => { setScanError(null); openScanner(hotspotSubMode === 'host' ? 'answer' : 'offer'); }} className="shrink-0 underline">Try scanning again</button>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2">
               {(['host', 'guest'] as const).map((role) => (
                 <button
                   key={role}
-                  onClick={() => setHotspotSubMode(role)}
+                  onClick={() => { setHotspotSubMode(role); setManualEntry(false); setScanTarget(null); setScanError(null); }}
                   className="flex-1 py-2 rounded-xl text-xs font-semibold cursor-pointer capitalize"
                   style={{
                     backgroundColor: hotspotSubMode === role ? theme.accentSoft : theme.bgBoard,
@@ -350,121 +387,114 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                     border: `1px solid ${hotspotSubMode === role ? theme.accent + '55' : theme.border}`,
                   }}
                 >
-                  {role === 'host' ? '1. Host on Hotspot' : '2. Join on Hotspot'}
+                  {role === 'host' ? 'Host a game' : 'Join a game'}
                 </button>
               ))}
             </div>
 
-            {hotspotSubMode === 'host' ? (
-              <div className="space-y-3 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+            {scanTarget ? (
+              <NearbyQrScanner
+                theme={theme}
+                onDetected={handleScannedPairingQr}
+                onClose={() => setScanTarget(null)}
+                onManualEntry={useManualEntry}
+              />
+            ) : hotspotSubMode === 'host' ? (
+              <div className="space-y-4 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
                 {!hotspotOfferCode ? (
-                  <button
-                    onClick={onStartHotspotHost}
-                    disabled={isBusy}
-                    className="w-full py-2.5 rounded-xl text-xs font-bold cursor-pointer"
-                    style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}
-                  >
-                    Generate Hotspot Pairing Code
-                  </button>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-bold" style={{ color: theme.textPrimary }}>Create a local game</div>
+                      <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.textSecondary }}>Keep this screen open. Your friend can join by scanning the QR that appears here.</p>
+                    </div>
+                    <button onClick={onStartHotspotHost} disabled={isBusy} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-50" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
+                      {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wifi className="h-4 w-4" />}
+                      {isBusy ? 'Preparing nearby game…' : 'Start nearby game'}
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <div className="text-xs font-semibold" style={{ color: theme.textPrimary }}>
-                      Step 1: Send this Offer Code to your friend (AirDrop / Nearby / Copy)
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-2 text-xs font-semibold" style={{ color: theme.validHighlight }}>
+                      <span className="h-2 w-2 animate-pulse rounded-full" style={{ backgroundColor: theme.validHighlight }} />
+                      Waiting for a nearby player
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        value={hotspotOfferCode}
-                        aria-label="Hotspot offer code"
-                        className="flex-1 px-2.5 py-2 rounded-lg text-[11px] font-mono outline-none"
-                        style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}
-                      />
-                      <button
-                        onClick={() => copyText(hotspotOfferCode, 'offer')}
-                        className="px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer shrink-0"
-                        style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
-                      >
-                        {copiedField === 'offer' ? 'Copied!' : 'Copy'}
+                    <div className="text-center">
+                      <p className="text-sm font-bold" style={{ color: theme.textPrimary }}>Let your friend scan this</p>
+                      <p className="mt-1 text-xs" style={{ color: theme.textMuted }}>Both devices need to be on the same Wi-Fi or hotspot.</p>
+                    </div>
+                    <div className="flex justify-center"><QrCodeBox value={hotspotOfferCode} size={220} label="QR code for a friend to scan and join this local game" /></div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button onClick={() => openScanner('answer')} className="flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.accent, color: theme.bgApp }}>
+                        <ScanLine className="h-4 w-4" /> Scan their reply
+                      </button>
+                      <button onClick={() => setManualEntry((open) => !open)} className="flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
+                        <Copy className="h-4 w-4" /> {manualEntry ? 'Hide text fallback' : 'Text fallback'}
                       </button>
                     </div>
-
-                    <div className="text-xs font-semibold pt-2" style={{ color: theme.textPrimary }}>
-                      Step 2: Paste your friend&apos;s Answer Code to link
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        value={answerInput}
-                        aria-label="Host answer code"
-                        onChange={(e) => setAnswerInput(e.target.value)}
-                        placeholder="Paste BC1:... answer code"
-                        className="flex-1 px-2.5 py-2 rounded-lg text-[11px] font-mono outline-none"
-                        style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
-                      />
-                      <button
-                        onClick={() => answerInput.trim() && onAcceptHotspotAnswer(answerInput.trim())}
-                        disabled={!answerInput.trim()}
-                        className="px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer disabled:opacity-45 shrink-0"
-                        style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}
-                      >
-                        Connect
-                      </button>
-                    </div>
-                  </>
+                    {manualEntry && (
+                      <div className="space-y-2 rounded-xl p-3" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+                        <label htmlFor="nearby-offer" className="block text-xs font-semibold" style={{ color: theme.textPrimary }}>Offer code</label>
+                        <div className="flex gap-2">
+                          <input id="nearby-offer" readOnly value={hotspotOfferCode} className="min-w-0 flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono" style={{ backgroundColor: theme.bgBoard, color: theme.textSecondary, border: `1px solid ${theme.border}` }} />
+                          <button onClick={() => copyText(hotspotOfferCode, 'offer')} className="rounded-lg px-3 text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent }}>{copiedField === 'offer' ? 'Copied' : 'Copy'}</button>
+                        </div>
+                        <label htmlFor="nearby-answer" className="block pt-2 text-xs font-semibold" style={{ color: theme.textPrimary }}>Paste your friend&apos;s reply</label>
+                        <div className="flex gap-2">
+                          <input id="nearby-answer" value={answerInput} onChange={(event) => setAnswerInput(event.target.value)} placeholder="Paste reply code" className="min-w-0 flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}` }} />
+                          <button onClick={() => answerInput.trim() && onAcceptHotspotAnswer(answerInput.trim())} disabled={!answerInput.trim()} className="rounded-lg px-3 text-xs font-bold disabled:opacity-45" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>Connect</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="space-y-3 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
-                <div className="text-xs font-semibold" style={{ color: theme.textPrimary }}>
-                  Step 1: Paste Host&apos;s Offer Code
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={offerInput}
-                    aria-label="Host offer code"
-                    onChange={(e) => setOfferInput(e.target.value)}
-                    placeholder="Paste BC1:... offer code"
-                    className="flex-1 px-2.5 py-2 rounded-lg text-[11px] font-mono outline-none"
-                    style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
-                  />
-                  <button
-                    onClick={() => offerInput.trim() && onJoinHotspotOffer(offerInput.trim())}
-                    disabled={!offerInput.trim() || isBusy}
-                    className="px-3.5 py-2 rounded-lg text-xs font-bold cursor-pointer disabled:opacity-45 shrink-0"
-                    style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}
-                  >
-                    Generate Answer
-                  </button>
-                </div>
-
-                {hotspotAnswerCode && (
-                  <>
-                    <div className="text-xs font-semibold pt-2" style={{ color: theme.textPrimary }}>
-                      Step 2: Send this Answer Code back to the Host
+              <div className="space-y-4 rounded-2xl p-4" style={{ backgroundColor: theme.bgBoard, border: `1px solid ${theme.border}` }}>
+                {hotspotAnswerCode ? (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-sm font-bold" style={{ color: theme.textPrimary }}>Show this reply to the host</div>
+                      <p className="mt-1 text-xs" style={{ color: theme.textSecondary }}>The host scans it to finish connecting. Keep this screen open.</p>
                     </div>
-                    <p className="text-[11px]" style={{ color: theme.textMuted }}>Wait for the host to paste it and accept the connection.</p>
-                    <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        value={hotspotAnswerCode}
-                        aria-label="Hotspot answer code"
-                        className="flex-1 px-2.5 py-2 rounded-lg text-[11px] font-mono outline-none"
-                        style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}
-                      />
-                      <button
-                        onClick={() => copyText(hotspotAnswerCode, 'answer')}
-                        className="px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer shrink-0"
-                        style={{ backgroundColor: theme.accentSoft, color: theme.accent }}
-                      >
-                        {copiedField === 'answer' ? 'Copied!' : 'Copy'}
+                    <div className="flex justify-center"><QrCodeBox value={hotspotAnswerCode} size={220} label="QR code for the host to scan and finish local pairing" /></div>
+                    <div className="flex justify-center">
+                      <button onClick={() => setManualEntry((open) => !open)} className="flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold" style={{ backgroundColor: theme.bgSurface, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
+                        <Copy className="h-4 w-4" /> {manualEntry ? 'Hide text fallback' : 'Text fallback'}
                       </button>
                     </div>
-                  </>
+                    {manualEntry && (
+                      <div className="flex gap-2 rounded-xl p-3" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+                        <input readOnly value={hotspotAnswerCode} aria-label="Nearby pairing reply code" className="min-w-0 flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono" style={{ backgroundColor: theme.bgBoard, color: theme.textSecondary, border: `1px solid ${theme.border}` }} />
+                        <button onClick={() => copyText(hotspotAnswerCode, 'answer')} className="rounded-lg px-3 text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent }}>{copiedField === 'answer' ? 'Copied' : 'Copy'}</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-bold" style={{ color: theme.textPrimary }}>Join a nearby game</div>
+                      <p className="mt-1 text-xs leading-relaxed" style={{ color: theme.textSecondary }}>Ask the host to start a local game, then scan the QR on their screen.</p>
+                    </div>
+                    <button onClick={() => openScanner('offer')} disabled={isBusy} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-50" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
+                      <Camera className="h-4 w-4" /> Scan host QR
+                    </button>
+                    <button onClick={() => setManualEntry((open) => !open)} className="w-full py-1 text-xs font-medium underline" style={{ color: theme.textMuted }}>{manualEntry ? 'Hide text fallback' : 'Can’t scan? Enter a code instead'}</button>
+                    {manualEntry && (
+                      <div className="space-y-2 rounded-xl p-3" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }}>
+                        <label htmlFor="nearby-join-offer" className="block text-xs font-semibold" style={{ color: theme.textPrimary }}>Host&apos;s offer code</label>
+                        <div className="flex gap-2">
+                          <input id="nearby-join-offer" value={offerInput} onChange={(event) => setOfferInput(event.target.value)} placeholder="Paste host code" className="min-w-0 flex-1 rounded-lg px-2.5 py-2 text-[10px] font-mono" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}` }} />
+                          <button onClick={() => offerInput.trim() && onJoinHotspotOffer(offerInput.trim())} disabled={!offerInput.trim() || isBusy} className="rounded-lg px-3 text-xs font-bold disabled:opacity-45" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>Join</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
             {(hotspotOfferCode || hotspotAnswerCode) && (
               <div className="text-right">
-                <button onClick={onResetConnection} className="text-xs underline" style={{ color: theme.textMuted }}>Cancel pairing</button>
+                <button onClick={onResetConnection} className="text-xs underline" style={{ color: theme.textMuted }}>Cancel nearby game</button>
               </div>
             )}
           </div>

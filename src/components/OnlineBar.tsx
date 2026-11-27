@@ -45,7 +45,7 @@ export const OnlineBar: React.FC<OnlineBarProps> = ({
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold" style={{ color: theme.validHighlight }}>
           <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: theme.validHighlight }} />
           <Wifi className="w-3.5 h-3.5" />
-          <span>{transportKind === 'online-room' ? `Room ${roomCode}` : 'Hotspot P2P'}</span>
+          <span>{transportKind === 'online-room' ? `Room ${roomCode}` : 'Nearby P2P'}</span>
         </span>
         {latencyMs !== null && (
           <span

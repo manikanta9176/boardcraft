@@ -5,20 +5,25 @@ interface QrCodeBoxProps {
   value: string;
   size?: number;
   className?: string;
+  label?: string;
 }
 
-export const QrCodeBox: React.FC<QrCodeBoxProps> = ({ value, size = 152, className = '' }) => {
+export const QrCodeBox: React.FC<QrCodeBoxProps> = ({ value, size = 152, className = '', label = 'QR code for the room invite' }) => {
   const [svgMarkup, setSvgMarkup] = useState<string>('');
+  const [encodeError, setEncodeError] = useState(false);
 
   useEffect(() => {
     let active = true;
     if (!value) {
       setSvgMarkup('');
+      setEncodeError(false);
       return;
     }
+    setEncodeError(false);
     QRCode.toString(value, {
       type: 'svg',
-      margin: 1,
+      errorCorrectionLevel: 'L',
+      margin: 2,
       width: size,
       color: {
         dark: '#090D16',
@@ -29,7 +34,10 @@ export const QrCodeBox: React.FC<QrCodeBoxProps> = ({ value, size = 152, classNa
         if (active) setSvgMarkup(svg);
       })
       .catch(() => {
-        if (active) setSvgMarkup('');
+        if (active) {
+          setSvgMarkup('');
+          setEncodeError(true);
+        }
       });
 
     return () => {
@@ -37,13 +45,21 @@ export const QrCodeBox: React.FC<QrCodeBoxProps> = ({ value, size = 152, classNa
     };
   }, [value, size]);
 
-  if (!svgMarkup) return null;
+  if (!svgMarkup && !encodeError) return null;
+
+  if (encodeError) {
+    return (
+      <div className={`rounded-xl p-3 text-center text-xs ${className}`} role="alert" aria-label={`${label}; use the text fallback`} style={{ color: '#6B463E', backgroundColor: '#FFF4EF', maxWidth: size + 16 }}>
+        This QR code is too large to display. Use the text fallback instead.
+      </div>
+    );
+  }
 
   return (
     <div
       className={`rounded-xl bg-white p-2 inline-flex items-center justify-center shadow-md ${className}`}
       role="img"
-      aria-label="QR code for the room invite"
+      aria-label={label}
       style={{ width: size + 16, height: size + 16 }}
       dangerouslySetInnerHTML={{ __html: svgMarkup }}
     />

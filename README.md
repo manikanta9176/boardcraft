@@ -21,7 +21,7 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 ## Features
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
-- **Local Wi-Fi / Hotspot Pairing** with manually exchanged offer and answer codes for devices on the same network
+- **Nearby Wi-Fi / Hotspot Play** with camera-assisted QR pairing between devices on the same network
 - **2 Dark Tabletop Themes**: Carbon Ember, inspired by StackDome's warm charcoal and ember palette, and Midnight Felt
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
@@ -33,7 +33,7 @@ Progress and preferences stay in versioned browser storage on the current device
 ## Multiplayer Notes
 
 - Online rooms use PeerJS signaling to find one another and WebRTC data channels to exchange moves. No BoardCraft account or application server is required. The browser may use STUN/TURN services to establish a connection, and some network settings can prevent a match from connecting.
-- Local pairing uses WebRTC host candidates only. Put both devices on the same Wi-Fi or hotspot, then exchange the offer and answer codes. Some hotspot networks block traffic between connected devices.
+- Browsers do not expose a cross-device Wi-Fi or Bluetooth player-discovery API, so local pairing uses QR codes instead of a nearby-device list. Nearby pairing uses WebRTC host candidates only. Put both devices on the same Wi-Fi or hotspot, scan the host QR, then let the host scan the reply QR. BoardCraft asks for camera access only when scanning; the QR is decoded on-device. No internet signaling is used for this local match, though some hotspot networks block device-to-device traffic.
 - Room codes are temporary. Keep the host page open until the other player joins; rooms are not saved or listed publicly.
 
 ## Local Development

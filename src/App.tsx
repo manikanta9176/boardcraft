@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GameHeader } from './components/GameHeader';
 import { GameOverBanner } from './components/GameOverBanner';
 import { ConfettiBurst } from './components/ConfettiBurst';
 import { LobbyView } from './components/LobbyView';
-import { MultiplayerModal } from './components/MultiplayerModal';
 import { NotFoundView } from './components/NotFoundView';
 import { OnlineBar } from './components/OnlineBar';
 import { PlayerBar } from './components/PlayerBar';
@@ -81,6 +80,8 @@ import {
 } from './multiplayer/types';
 import { loadMostRecentSavedGame, loadPreferences, loadSavedMatch, removeSavedMatch, saveMatch, savePreferences, SavedMatch } from './utils/persistence';
 import { parseBoardCraftRoute, writeBoardCraftRoute } from './utils/routing';
+
+const MultiplayerModal = lazy(() => import('./components/MultiplayerModal').then((module) => ({ default: module.MultiplayerModal })));
 
 type AnyGameState =
   | { kind: 'morris'; data: MorrisState }
@@ -1176,24 +1177,26 @@ export function App() {
       )}
 
       {multiplayerOpen && (
-        <MultiplayerModal
-          theme={theme}
-          initialTab={multiplayerTab}
-          initialJoinCode={inviteJoinCode}
-          phase={connectionPhase}
-          transportKind={transportKind}
-          roomCode={roomCode}
-          hotspotOfferCode={hotspotOfferCode}
-          hotspotAnswerCode={hotspotAnswerCode}
-          errorMsg={connectionError}
-          onClose={closeMultiplayer}
-          onCreateRoom={createRoom}
-          onJoinRoom={joinRoom}
-          onStartHotspotHost={startHotspotHost}
-          onAcceptHotspotAnswer={acceptHotspotAnswer}
-          onJoinHotspotOffer={joinHotspot}
-          onResetConnection={resetConnection}
-        />
+        <Suspense fallback={null}>
+          <MultiplayerModal
+            theme={theme}
+            initialTab={multiplayerTab}
+            initialJoinCode={inviteJoinCode}
+            phase={connectionPhase}
+            transportKind={transportKind}
+            roomCode={roomCode}
+            hotspotOfferCode={hotspotOfferCode}
+            hotspotAnswerCode={hotspotAnswerCode}
+            errorMsg={connectionError}
+            onClose={closeMultiplayer}
+            onCreateRoom={createRoom}
+            onJoinRoom={joinRoom}
+            onStartHotspotHost={startHotspotHost}
+            onAcceptHotspotAnswer={acceptHotspotAnswer}
+            onJoinHotspotOffer={joinHotspot}
+            onResetConnection={resetConnection}
+          />
+        </Suspense>
       )}
 
       {reactionToast && (
