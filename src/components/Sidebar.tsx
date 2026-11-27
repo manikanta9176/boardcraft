@@ -33,7 +33,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const renderGroup = (title: string, items: typeof GAMES) => (
     <div className="mb-5">
       <div
-        className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider"
+        className="px-3 mb-2 text-[11px] font-semibold"
         style={{ color: theme.textMuted }}
       >
         {title}
@@ -49,11 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectGame(game.id);
                 onCloseMobile();
               }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
+              className="nav-game w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed"
               style={{
-                backgroundColor: isActive ? theme.accentSoft : 'transparent',
+                backgroundColor: isActive ? theme.bgSurface : 'transparent',
                 color: isActive ? theme.accent : theme.textSecondary,
-                border: `1px solid ${isActive ? theme.accent + '40' : 'transparent'}`,
+                border: `1px solid ${isActive ? theme.border : 'transparent'}`,
+                boxShadow: isActive ? `inset 2px 0 0 ${theme.accent}` : 'none',
               }}
             >
               <GameIcon id={game.id} className="w-[18px] h-[18px] shrink-0" />
@@ -87,7 +88,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }}
     >
       <div
-        className="px-4 py-4 flex items-center justify-between"
+        className="px-4 py-5 flex items-center justify-between"
         style={{ borderBottom: `1px solid ${theme.border}` }}
       >
         <div className="flex items-center gap-2.5">
@@ -136,16 +137,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="text-sm font-semibold">Play online</span>
           </button>
         </div>
-        {renderGroup('Morris Family', morrisGames)}
-        {renderGroup('Classic Strategy', classicGames)}
+        {renderGroup('Morris games', morrisGames)}
+        {renderGroup('Other classics', classicGames)}
       </div>
 
       <div
-        className="px-4 py-3 text-[11px] flex items-center justify-between"
-        style={{ borderTop: `1px solid ${theme.border}`, color: theme.textMuted }}
+        className="px-4 py-4 flex items-center gap-3"
+        style={{ borderTop: `1px solid ${theme.border}` }}
       >
-        <span>100% Client-Side AI</span>
-        <span className="font-mono">v1.0</span>
+        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}88` }} />
+        <div>
+          <div className="text-xs font-semibold" style={{ color: theme.textPrimary }}>Ready to play</div>
+          <div className="text-[10px] mt-0.5" style={{ color: theme.textMuted }}>10 classic boards</div>
+        </div>
       </div>
     </div>
   );

@@ -61,10 +61,11 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
   return (
     <header
-      className="px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3"
+      className="match-header sticky top-0 z-20 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
       style={{
-        backgroundColor: theme.bgSidebar,
+        backgroundColor: theme.bgGlass,
         borderBottom: `1px solid ${theme.border}`,
+        backdropFilter: 'blur(16px)',
       }}
     >
       <div className="flex items-center gap-3 min-w-0">
@@ -81,7 +82,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           <Menu className="w-4 h-4" />
         </button>
         <div className="min-w-0">
-          <h1 className="text-base sm:text-lg font-bold tracking-tight truncate" style={{ color: theme.textPrimary }}>
+          <h1 className="display-face text-base sm:text-xl font-bold tracking-[-.04em] truncate" style={{ color: theme.textPrimary }}>
             {game.name}
           </h1>
           <p className="text-xs truncate hidden sm:block" style={{ color: theme.textMuted }}>
