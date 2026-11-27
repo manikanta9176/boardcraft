@@ -64,8 +64,9 @@ function isGameId(value: unknown): value is GameId {
 }
 
 function normalizeThemeId(value: unknown): ThemeId | null {
-  if (value === 'paper' || value === 'sea-glass') return 'paper';
-  if (value === 'obsidian' || value === 'birch' || value === 'walnut') return value;
+  if (value === 'stackdome' || value === 'obsidian') return value;
+  // Older light palettes now migrate to the StackDome-inspired dark default.
+  if (value === 'paper' || value === 'sea-glass' || value === 'birch' || value === 'walnut') return 'stackdome';
   return null;
 }
 
@@ -77,7 +78,7 @@ export function loadPreferences(): PlayerPreferences {
   const value = parseRaw(PREFERENCES_KEY);
   if (isRecord(value) && value.version === STORAGE_VERSION) {
     return {
-      themeId: normalizeThemeId(value.themeId) ?? 'paper',
+      themeId: normalizeThemeId(value.themeId) ?? 'stackdome',
       soundEnabled: typeof value.soundEnabled === 'boolean' ? value.soundEnabled : true,
       difficulty: isDifficulty(value.difficulty) ? value.difficulty : 'medium',
       lastGameId: isGameId(value.lastGameId) ? value.lastGameId : null,
@@ -88,7 +89,7 @@ export function loadPreferences(): PlayerPreferences {
   const legacyTheme = readRaw('boardcraft-theme');
   const legacySound = readRaw('boardcraft-sound');
   return {
-    themeId: normalizeThemeId(legacyTheme) ?? 'paper',
+    themeId: normalizeThemeId(legacyTheme) ?? 'stackdome',
     soundEnabled: legacySound === null ? true : legacySound === 'true',
     difficulty: 'medium',
     lastGameId: null,

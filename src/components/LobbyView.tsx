@@ -42,7 +42,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}66` }} />
               THE STRATEGY ROOM
             </div>
-            <h1 id="lobby-title" className="display-face mt-5 text-[2.65rem] sm:text-6xl xl:text-[4.5rem] leading-[.92] font-medium tracking-[-.075em]" style={{ color: theme.id === 'paper' ? '#C4BEB4' : theme.textMuted }}>
+            <h1 id="lobby-title" className="display-face mt-5 text-[2.65rem] sm:text-6xl xl:text-[4.5rem] leading-[.92] font-medium tracking-[-.075em]" style={{ color: theme.textSecondary }}>
               Sit down.
               <br />
               <span style={{ color: theme.textPrimary }}>Think ahead.</span>
