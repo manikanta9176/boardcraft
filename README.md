@@ -1,6 +1,6 @@
-# BoardCraft — Classic Strategy & Morris Board Games
+# PlayDeck — Board, Arcade & Daily Games
 
-A clean, modern collection of **10 classic abstract strategy board games** in a single fast React + TypeScript + Tailwind CSS application—ready for one-click deployment on Vercel.
+A relaxed, modern game room with **13 classic strategy, arcade, and daily games** in one responsive React + TypeScript app, ready to deploy on Vercel.
 
 ## Included Games
 
@@ -18,8 +18,13 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Gomoku** — 15×15 five-in-a-row intersection strategy
 - **Dots & Boxes** — 5×5 dot grid with edge drawing, box claiming, and chain tactics
 
+### Arcade & Daily Games
+- **2048** — Slide tiles together, swipe on phones, and keep a saved personal best
+- **Minesweeper** — A compact 9×9 puzzle with a safe first reveal and touch-friendly flag mode
+- **Word Guess** — A five-letter daily puzzle with six tries, keyboard input, and on-screen keys
+
 ## Features
-- **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, or invite a friend to a live match
+- **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, solo arcade games, or invite a friend to a live match
 - **Online Rooms** with a short room code, QR code, and shareable invite link
 - **Find Nearby** to list games hosted on the same Wi-Fi or hotspot, then connect directly device-to-device
 - **Offline QR Pairing** as a no-internet fallback for nearby devices
@@ -29,7 +34,7 @@ A clean, modern collection of **10 classic abstract strategy board games** in a 
 - **Direct game links** at `/play/<game-id>` with browser back and forward navigation
 - **Automatic local saves** for in-progress solo and pass-and-play matches, plus theme, sound, and difficulty preferences
 
-Progress and preferences stay in versioned browser storage on the current device. Online matches are never saved locally. Use the library’s **Continue** action to resume the most recent saved match.
+Progress and preferences stay in versioned browser storage on the current device. 2048 also keeps a separate personal best across new rounds. Online matches are never saved locally. Use the library’s **Continue** action to resume the most recent saved match.
 
 ## Multiplayer Notes
 

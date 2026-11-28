@@ -140,5 +140,34 @@ export const GameIcon: React.FC<GameIconProps> = ({ id, className = 'w-5 h-5' })
           <circle cx="18" cy="18" r="1.5" fill="currentColor" />
         </svg>
       );
+    case '2048':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+          <rect x="3" y="3" width="8" height="8" rx="1.5" fill="currentColor" fillOpacity=".12" />
+          <rect x="13" y="3" width="8" height="8" rx="1.5" />
+          <rect x="3" y="13" width="8" height="8" rx="1.5" />
+          <rect x="13" y="13" width="8" height="8" rx="1.5" fill="currentColor" fillOpacity=".25" />
+        </svg>
+      );
+    case 'minesweeper':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}>
+          <path d="M12 3v18M5.6 5.6l12.8 12.8M3 12h18M5.6 18.4 18.4 5.6" />
+          <circle cx="12" cy="12" r="5.2" fill="currentColor" fillOpacity=".14" />
+          <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+        </svg>
+      );
+    case 'word-guess':
+      return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}>
+          <rect x="3" y="4" width="5" height="5" rx="1" fill="currentColor" fillOpacity=".18" />
+          <rect x="9.5" y="4" width="5" height="5" rx="1" />
+          <rect x="16" y="4" width="5" height="5" rx="1" />
+          <rect x="3" y="10.5" width="5" height="5" rx="1" />
+          <rect x="9.5" y="10.5" width="5" height="5" rx="1" fill="currentColor" fillOpacity=".2" />
+          <rect x="16" y="10.5" width="5" height="5" rx="1" />
+          <path d="M4 20h16" />
+        </svg>
+      );
   }
 };

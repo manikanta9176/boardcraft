@@ -64,12 +64,13 @@ export const ReversiBoard: React.FC<ReversiBoardProps> = ({
                     <div
                       className={`w-[78%] h-[78%] rounded-full flex items-center justify-center transition-all duration-300 ${
                         flipped ? 'animate-disc-flip' : last ? 'animate-piece-enter' : ''
-                      }`}
+                      } ${cell === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
                       style={{
                         backgroundColor: cell === 1 ? theme.p1Color : theme.p2Color,
                         border: `2px solid ${cell === 1 ? theme.p1Stroke : theme.p2Stroke}`,
+                        '--coin-turn-glow': cell === 1 ? theme.p1Glow : theme.p2Glow,
                         boxShadow: `0 2px 5px rgba(0,0,0,${theme.isDark ? 0.32 : 0.12})`,
-                      }}
+                      } as React.CSSProperties}
                     >
                       {last && (
                         <span

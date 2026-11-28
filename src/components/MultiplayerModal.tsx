@@ -78,7 +78,9 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   const [manualEntry, setManualEntry] = useState(false);
   const [useQrFallback, setUseQrFallback] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
-  const [hostGameId, setHostGameId] = useState<GameId>(gameId);
+  const [hostGameId, setHostGameId] = useState<GameId>(() =>
+    GAMES.find((game) => game.id === gameId && game.category !== 'arcade')?.id ?? GAMES.find((game) => game.category !== 'arcade')!.id,
+  );
   const [nearbyRooms, setNearbyRooms] = useState<NearbyGameListing[]>([]);
   const [nearbySearchActive, setNearbySearchActive] = useState(false);
   const [nearbySearchLoading, setNearbySearchLoading] = useState(false);
@@ -96,8 +98,8 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
     if (!inviteUrl || !navigator.share) return;
     try {
       await navigator.share({
-        title: 'Join my BoardCraft match!',
-        text: `Join Room ${roomCode} on BoardCraft:`,
+        title: 'Join my PlayDeck match!',
+        text: `Join Room ${roomCode} on PlayDeck:`,
         url: inviteUrl,
       });
     } catch {
@@ -110,7 +112,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
     setScanTarget(null);
     setScanError(null);
     if (!value.startsWith('BC1:')) {
-      setScanError('That QR code is not a BoardCraft local pairing code. Scan the code shown in your friend’s game.');
+      setScanError('That QR code is not a PlayDeck local pairing code. Scan the code shown in your friend’s game.');
       return;
     }
     if (target === 'offer') onJoinHotspotOffer(value);
@@ -578,7 +580,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                         className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
                         style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
                       >
-                        {GAMES.map((game) => <option key={game.id} value={game.id}>{game.shortName}</option>)}
+                        {GAMES.filter((game) => game.category !== 'arcade').map((game) => <option key={game.id} value={game.id}>{game.shortName}</option>)}
                       </select>
                       <button onClick={() => onStartNearbyHost(hostGameId)} disabled={isBusy} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-50" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
                         {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wifi className="h-4 w-4" />}

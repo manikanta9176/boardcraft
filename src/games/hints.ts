@@ -50,5 +50,7 @@ export function getSuggestedHint(state: AnyGameState): string | null {
       if (!edge) return null;
       return `Try a ${edge.orientation === 'h' ? 'horizontal' : 'vertical'} edge at row ${edge.row + 1}, col ${edge.col + 1}`;
     }
+    case 'arcade':
+      return null;
   }
 }

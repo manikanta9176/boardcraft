@@ -5,6 +5,7 @@ import {
   Menu,
   Radio,
   RotateCcw,
+  Sparkles,
   Undo2,
   Users,
   Volume2,
@@ -86,7 +87,12 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Mode Switcher */}
-        {mode === 'online' ? (
+        {game.category === 'arcade' ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Solo game</span>
+          </div>
+        ) : mode === 'online' ? (
           <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
             <Radio className="w-3.5 h-3.5" />
             <span>Online match</span>
@@ -141,7 +147,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
-          {!multiplayerConnected && (
+          {!multiplayerConnected && game.category !== 'arcade' && (
             <button
               onClick={onOpenMultiplayer}
               aria-label="Invite a friend to play online"

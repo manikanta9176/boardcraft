@@ -146,9 +146,51 @@ const DotsArtwork: React.FC<{ theme: ThemePalette }> = ({ theme }) => (
   </g>
 );
 
+const ArcadeArtwork: React.FC<{ gameId: GameId; theme: ThemePalette }> = ({ gameId, theme }) => {
+  if (gameId === '2048') {
+    const values = [2, 4, 0, 8, 4, 8, 16, 0, 0, 2, 32, 4, 2, 0, 4, 2];
+    return <g>{values.map((value, index) => {
+      const x = 73 + (index % 4) * 30;
+      const y = 18 + Math.floor(index / 4) * 30;
+      const mix = Math.min(62, 9 + Math.log2(value || 2) * 7);
+      return <g key={index}>
+        <rect x={x} y={y} width="26" height="26" rx="5" fill={value ? `color-mix(in srgb, ${theme.validHighlight} ${mix}%, ${theme.bgSurface})` : theme.bgBoardAlt} stroke={theme.border} />
+        {value > 0 && <text x={x + 13} y={y + 17} textAnchor="middle" fontSize={value > 9 ? 9 : 11} fontWeight="700" fill={theme.textPrimary}>{value}</text>}
+      </g>;
+    })}</g>;
+  }
+  if (gameId === 'minesweeper') {
+    return <g>{Array.from({ length: 8 }, (_, index) => {
+      const x = 78 + (index % 4) * 27;
+      const y = 22 + Math.floor(index / 4) * 34;
+      const revealed = [0, 1, 4, 5, 6].includes(index);
+      const value = [1, 2, 1, 3, 1][[0, 1, 4, 5, 6].indexOf(index)];
+      return <g key={index}>
+        <rect x={x} y={y} width="23" height="29" rx="5" fill={revealed ? theme.bgApp : theme.bgSurface} stroke={theme.border} />
+        {revealed && <text x={x + 11.5} y={y + 20} textAnchor="middle" fontSize="14" fontWeight="700" fill={value === 1 ? theme.validHighlight : theme.captureHighlight}>{value}</text>}
+        {!revealed && index === 3 && <path d={`M${x + 11} ${y + 7}v14M${x + 11} ${y + 7}l9 3-9 3`} fill="none" stroke={theme.accent} strokeWidth="2" strokeLinejoin="round" />}
+      </g>;
+    })}</g>;
+  }
+  const cells = ['W', 'O', 'R', 'D', 'S'];
+  return <g>{Array.from({ length: 15 }, (_, index) => {
+    const row = Math.floor(index / 5);
+    const col = index % 5;
+    const x = 63 + col * 29;
+    const y = 29 + row * 32;
+    const state = row === 0 ? 'correct' : row === 1 && col === 2 ? 'present' : row === 2 && col < 2 ? 'absent' : '';
+    const fill = state === 'correct' ? theme.validHighlight : state === 'present' ? theme.captureHighlight : state ? theme.bgBoardAlt : theme.bgSurface;
+    return <g key={index}>
+      <rect x={x} y={y} width="24" height="27" rx="4" fill={fill} stroke={theme.border} />
+      {state && <text x={x + 12} y={y + 18} textAnchor="middle" fontSize="13" fontWeight="700" fill="#FFFFFF">{cells[col]}</text>}
+    </g>;
+  })}</g>;
+};
+
 export const GameArtwork: React.FC<GameArtworkProps> = ({ gameId, theme, className = '' }) => {
   let artwork: React.ReactNode;
   if (gameId.includes('morris')) artwork = <MorrisArtwork gameId={gameId} theme={theme} />;
+  else if (gameId === '2048' || gameId === 'minesweeper' || gameId === 'word-guess') artwork = <ArcadeArtwork gameId={gameId} theme={theme} />;
   else {
     switch (gameId) {
       case 'connect4': artwork = <ConnectArtwork theme={theme} />; break;

@@ -6,6 +6,7 @@ import { MancalaState, applyMancalaMove, createInitialMancalaState } from './man
 import { MorrisMove, MorrisState, applyMorrisMove, createInitialMorrisState } from './morris/engine';
 import { MorrisVariantId } from './morris/topologies';
 import { ReversiState, applyReversiMove, createInitialReversiState } from './reversi';
+import { ArcadeState, createArcadeState } from './arcade';
 import { GameId } from '../types/game';
 
 export type AnyGameState =
@@ -15,7 +16,8 @@ export type AnyGameState =
   | { kind: 'checkers'; data: CheckersState }
   | { kind: 'mancala'; data: MancalaState }
   | { kind: 'gomoku'; data: GomokuState }
-  | { kind: 'dots-and-boxes'; data: DotsBoxesState };
+  | { kind: 'dots-and-boxes'; data: DotsBoxesState }
+  | { kind: 'arcade'; data: ArcadeState };
 
 export function isMorrisId(id: GameId): id is MorrisVariantId {
   return (
@@ -41,7 +43,12 @@ export function createInitialGameState(id: GameId): AnyGameState {
       return { kind: 'gomoku', data: createInitialGomokuState() };
     case 'dots-and-boxes':
       return { kind: 'dots-and-boxes', data: createInitialDotsBoxesState() };
+    case '2048':
+    case 'minesweeper':
+    case 'word-guess':
+      return { kind: 'arcade', data: createArcadeState(id) };
   }
+  throw new Error(`Unsupported game: ${id}`);
 }
 
 export type MoveSoundEvent = 'place' | 'move' | 'capture' | 'mill' | 'win';
@@ -122,5 +129,7 @@ export function applyRemoteMove(
             : 'place';
       return { next: { kind: 'dots-and-boxes', data: updated }, soundEvent };
     }
+    case 'arcade':
+      return null;
   }
 }

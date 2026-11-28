@@ -80,12 +80,13 @@ export const MorrisBoard: React.FC<MorrisBoardProps> = ({
           return (
             <span
               key={idx}
-              className="w-3.5 h-3.5 rounded-full transition-all duration-200"
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-200 ${available && player === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
               style={{
                 backgroundColor: available ? color : 'transparent',
                 border: `1.5px solid ${available ? stroke : theme.border}`,
                 opacity: available ? 1 : 0.28,
-              }}
+                '--coin-turn-glow': player === 1 ? theme.p1Glow : theme.p2Glow,
+              } as React.CSSProperties}
             />
           );
         })}
@@ -221,7 +222,11 @@ export const MorrisBoard: React.FC<MorrisBoardProps> = ({
 
                 {/* Placed Piece */}
                 {owner !== null && (
-                  <g filter="url(#piece-shadow)" className={isLastTo ? 'animate-piece-enter' : undefined}>
+                  <g
+                    filter="url(#piece-shadow)"
+                    className={`${isLastTo ? 'animate-piece-enter ' : ''}${owner === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
+                    style={{ '--coin-turn-glow': owner === 1 ? theme.p1Glow : theme.p2Glow } as React.CSSProperties}
+                  >
                     {/* Selection / Capture / Win Ring */}
                     {(isSelected || isCapturable || isWinNode) && (
                       <circle

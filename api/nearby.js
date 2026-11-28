@@ -49,7 +49,7 @@ function validateOrigin(req) {
 
 function createNetworkKey(req) {
   const secret = process.env.BOARDCRAFT_NEARBY_SECRET;
-  if (!secret) throw new Error('Nearby discovery needs BOARDCRAFT_NEARBY_SECRET.');
+  if (!secret) throw new Error('Nearby play is not configured on this deployment yet. Use offline QR pairing or add Nearby Play settings in Vercel.');
 
   const ip = header(req, 'x-forwarded-for')?.split(',')[0]?.trim()
     || (process.env.NODE_ENV !== 'production' ? 'local-development' : '');
@@ -100,7 +100,7 @@ function hashHostToken(token) {
 async function redisCommand(command) {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) throw new Error('Nearby discovery needs an Upstash Redis connection.');
+  if (!url || !token) throw new Error('Nearby play is not configured on this deployment yet. Use offline QR pairing or add Nearby Play settings in Vercel.');
 
   const response = await fetch(url, {
     method: 'POST',
@@ -134,7 +134,7 @@ async function memoryList(indexKey) {
 
 async function listRooms(indexKey) {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    if (process.env.NODE_ENV === 'production') throw new Error('Nearby discovery is not configured for this deployment.');
+    if (process.env.NODE_ENV === 'production') throw new Error('Nearby play is not configured on this deployment yet. Use offline QR pairing or add Nearby Play settings in Vercel.');
     return memoryList(indexKey);
   }
 
@@ -156,7 +156,7 @@ async function publishRoom(indexKey, room, tokenHash) {
   const storedRoom = { ...room, tokenHash };
   const value = JSON.stringify({ ...storedRoom, expiresAt });
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    if (process.env.NODE_ENV === 'production') throw new Error('Nearby discovery is not configured for this deployment.');
+    if (process.env.NODE_ENV === 'production') throw new Error('Nearby play is not configured on this deployment yet. Use offline QR pairing or add Nearby Play settings in Vercel.');
     const key = hostKey(indexKey, room.hostId);
     const existing = memoryStore.get(key);
     if (existing && existing.value.tokenHash !== tokenHash) return false;
@@ -207,7 +207,7 @@ function validHostToken(value) {
 }
 
 export default async function handler(req, res) {
-  if (!validateOrigin(req)) return json(res, 403, { error: 'This nearby lobby only accepts requests from BoardCraft.' });
+  if (!validateOrigin(req)) return json(res, 403, { error: 'This nearby lobby only accepts requests from PlayDeck.' });
   if (!['GET', 'POST', 'DELETE'].includes(req.method)) {
     res.setHeader('Allow', 'GET, POST, DELETE');
     return json(res, 405, { error: 'Method not allowed.' });
@@ -236,7 +236,7 @@ export default async function handler(req, res) {
       return json(res, 200, { ok: true });
     }
 
-    if (!GAME_IDS.has(body.gameId)) return json(res, 400, { error: 'Choose a valid BoardCraft game.' });
+    if (!GAME_IDS.has(body.gameId)) return json(res, 400, { error: 'Choose a valid PlayDeck game.' });
     const room = {
       hostId: body.hostId,
       peerId: `bc-nearby-${body.hostId}`,

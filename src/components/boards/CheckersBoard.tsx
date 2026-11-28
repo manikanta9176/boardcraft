@@ -105,7 +105,7 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
 
                   {piece && (
                     <div
-                      className={`w-[76%] h-[76%] rounded-full flex items-center justify-center transition-transform duration-150 ${isLastDestination ? 'animate-piece-slide' : ''}`}
+                      className={`w-[76%] h-[76%] rounded-full flex items-center justify-center transition-transform duration-150 ${isLastDestination ? 'animate-piece-slide ' : ''}${piece.player === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
                       style={{
                         ...(isLastDestination && state.lastMove
                           ? {
@@ -114,6 +114,7 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
                           }
                           : {}),
                         backgroundColor: piece.player === 1 ? theme.p1Color : theme.p2Color,
+                        '--coin-turn-glow': piece.player === 1 ? theme.p1Glow : theme.p2Glow,
                         border: `2.5px solid ${
                           isSel
                             ? theme.accent
@@ -127,7 +128,7 @@ export const CheckersBoard: React.FC<CheckersBoardProps> = ({
                           ? `0 0 0 3px ${theme.accent}55, 0 4px 10px rgba(0,0,0,${theme.isDark ? 0.36 : 0.14})`
                           : `0 2px 5px rgba(0,0,0,${theme.isDark ? 0.34 : 0.14})`,
                         transform: isSel ? 'scale(1.08)' : 'scale(1)',
-                      }}
+                      } as React.CSSProperties}
                     >
                       {piece.king ? (
                         <Crown

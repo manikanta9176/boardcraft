@@ -12,13 +12,13 @@ interface NearbyQrScannerProps {
 
 function cameraErrorMessage(error: unknown): string {
   if (error instanceof DOMException && error.name === 'NotAllowedError') {
-    return 'Camera access is blocked. Allow camera access for BoardCraft in your browser settings, or use the text fallback.';
+    return 'Camera access is blocked. Allow camera access for PlayDeck in your browser settings, or use the text fallback.';
   }
   if (error instanceof DOMException && error.name === 'NotFoundError') {
     return 'No camera was found on this device. Use the text fallback to pair.';
   }
   if (!window.isSecureContext) {
-    return 'Camera scanning needs a secure page. Open BoardCraft over HTTPS or localhost.';
+    return 'Camera scanning needs a secure page. Open PlayDeck over HTTPS or localhost.';
   }
   return 'The camera could not start. Check that another app is not using it, then try again or use the text fallback.';
 }

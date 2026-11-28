@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Bot, Clock3, Globe2, Grid3X3, Menu, RotateCcw, Users2, Wifi } from 'lucide-react';
+import { Bot, Clock3, Globe2, Grid3X3, Menu, RotateCcw, Sparkles, Users2, Wifi } from 'lucide-react';
 import { GAMES } from '../games/registry';
-import { GameCategory, GameId, ThemePalette } from '../types/game';
+import { GameCategory, GameId, GameMode, ThemePalette } from '../types/game';
 import { GameArtwork } from './GameArtwork';
 import { ThemeToggle } from './ThemeToggle';
 
 interface LobbyViewProps {
   theme: ThemePalette;
-  onLaunchGame: (id: GameId, mode: 'ai' | 'local') => void;
+  onLaunchGame: (id: GameId, mode: Extract<GameMode, 'ai' | 'local' | 'solo'>) => void;
   onOpenMultiplayer: (tab: 'online' | 'hotspot', gameId?: GameId) => void;
   onOpenMenu: () => void;
   onToggleTheme: () => void;
@@ -33,7 +33,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
           <button onClick={onOpenMenu} aria-label="Open game navigation" className="lg:hidden w-11 h-11 rounded-xl inline-flex items-center justify-center" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}><Menu className="w-4 h-4" /></button>
           <div className="flex items-center gap-2 lg:hidden">
             <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center" style={{ color: theme.accent, backgroundColor: theme.accentSoft, border: `1px solid ${theme.accent}38` }}><Grid3X3 className="w-4 h-4" /></span>
-            <span className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>BoardCraft</span>
+            <span className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>PlayDeck</span>
           </div>
         </div>
         <ThemeToggle theme={theme} onToggle={onToggleTheme} />
@@ -45,15 +45,15 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
           <div className="max-w-[640px]">
             <div className="inline-flex items-center gap-2 rounded-full py-1.5 px-2.5 text-[11px] font-bold tracking-[.08em]" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}` }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}66` }} />
-              THE STRATEGY ROOM
+              YOUR GAME ROOM
             </div>
             <h1 id="lobby-title" className="display-face mt-5 text-[2.65rem] sm:text-6xl xl:text-[4.5rem] leading-[.92] font-medium tracking-[-.075em]" style={{ color: theme.textSecondary }}>
-              Sit down.
+              Pick a game.
               <br />
-              <span style={{ color: theme.textPrimary }}>Think ahead.</span>
+              <span style={{ color: theme.textPrimary }}>Stay awhile.</span>
             </h1>
             <p className="mt-5 max-w-[480px] text-sm sm:text-base leading-relaxed" style={{ color: theme.textSecondary }}>
-              Pick a classic, learn its rhythm, and play solo or with a friend.
+              From thoughtful classics to quick puzzles, your next round is one tap away.
             </p>
 
             <div className="mt-7 flex flex-wrap gap-2.5">
@@ -79,9 +79,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
             )}
 
             <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium" style={{ color: theme.textMuted }}>
-              <span className="inline-flex items-center gap-1.5"><Bot className="w-3.5 h-3.5" style={{ color: theme.validHighlight }} /> Play solo</span>
+              <span className="inline-flex items-center gap-1.5"><Bot className="w-3.5 h-3.5" style={{ color: theme.validHighlight }} /> Solo &amp; daily puzzles</span>
               <span className="inline-flex items-center gap-1.5"><Users2 className="w-3.5 h-3.5" style={{ color: theme.validHighlight }} /> Pass &amp; play</span>
-              <span className="inline-flex items-center gap-1.5"><Globe2 className="w-3.5 h-3.5" style={{ color: theme.validHighlight }} /> Online rooms</span>
+              <span className="inline-flex items-center gap-1.5"><Globe2 className="w-3.5 h-3.5" style={{ color: theme.validHighlight }} /> Nearby &amp; online</span>
             </div>
           </div>
 
@@ -104,15 +104,16 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
       <section id="game-library" className="mt-12 sm:mt-16 scroll-mt-6" aria-labelledby="library-title">
         <div className="library-heading flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-5 sm:mb-6">
           <div>
-            <div className="text-[11px] font-bold tracking-[.13em] mb-2" style={{ color: theme.validHighlight }}>THE COLLECTION <span aria-hidden="true">/</span> {String(visibleGames.length).padStart(2, '0')} BOARDS</div>
+            <div className="text-[11px] font-bold tracking-[.13em] mb-2" style={{ color: theme.validHighlight }}>THE COLLECTION <span aria-hidden="true">/</span> {String(visibleGames.length).padStart(2, '0')} GAMES</div>
             <h2 id="library-title" className="display-face text-2xl sm:text-[2rem] font-bold tracking-[-.05em]" style={{ color: theme.textPrimary }}>Choose what to play</h2>
-            <p className="text-sm mt-1.5" style={{ color: theme.textMuted }}>Each board has its own rhythm. Pick one and get started.</p>
+            <p className="text-sm mt-1.5" style={{ color: theme.textMuted }}>Board classics, quick puzzles, and games made for a shared screen.</p>
           </div>
-          <div className="filter-control inline-flex self-start sm:self-auto gap-1 p-1 rounded-full" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} role="group" aria-label="Filter games">
+          <div className="filter-control inline-flex max-w-full flex-wrap self-start gap-1 p-1 rounded-2xl sm:self-auto sm:rounded-full" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} role="group" aria-label="Filter games">
             {([
               { id: 'all', label: `All ${GAMES.length}` },
               { id: 'morris', label: 'Morris' },
               { id: 'classic', label: 'Classics' },
+              { id: 'arcade', label: 'Arcade' },
             ] as const).map((item) => (
               <button key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id} className="min-h-11 rounded-full px-4 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: filter === item.id ? theme.accent : 'transparent', color: filter === item.id ? theme.bgSurface : theme.textMuted, outlineColor: theme.validHighlight }}>
                 {item.label}
@@ -127,7 +128,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
               <div className="game-art relative p-2.5 pb-0">
                 <GameArtwork gameId={game.id} theme={theme} className="block w-full h-[126px] sm:h-[132px] rounded-[15px]" />
                 <span className="absolute left-5 top-4 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: theme.bgApp, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
-                  {game.category === 'morris' ? 'Morris family' : 'Classic'}
+                  {game.category === 'morris' ? 'Morris family' : game.category === 'arcade' ? 'Arcade & puzzle' : 'Classic board'}
                 </span>
                 <span className="absolute right-5 top-4 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: theme.bgApp, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
                   <Clock3 className="w-3 h-3" />{game.duration}
@@ -136,10 +137,16 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
               <div className="p-4 sm:p-5">
                 <h3 className="display-face text-[1.08rem] font-bold tracking-[-.035em]" style={{ color: theme.textPrimary }}>{game.name}</h3>
                 <p className="mt-1.5 min-h-[36px] text-xs leading-relaxed" style={{ color: theme.textSecondary }}>{game.tagline}</p>
-                <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
-                  <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.bgSurface, outlineColor: theme.validHighlight }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>
-                  <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Users2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">2P</span></button>
-                  <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Globe2 className="w-4 h-4" /></button>
+                <div className={`mt-4 grid gap-2 ${game.category === 'arcade' ? 'grid-cols-1' : 'grid-cols-[1fr_auto_auto]'}`}>
+                  {game.category === 'arcade' ? (
+                    <button onClick={() => onLaunchGame(game.id, 'solo')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#FFFFFF', outlineColor: theme.validHighlight }}><Sparkles className="w-3.5 h-3.5" />Play solo</button>
+                  ) : (
+                    <>
+                      <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#FFFFFF', outlineColor: theme.validHighlight }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>
+                      <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Users2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">2P</span></button>
+                      <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Globe2 className="w-4 h-4" /></button>
+                    </>
+                  )}
                 </div>
               </div>
             </article>

@@ -21,8 +21,9 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
   disabled,
   onSelectPit,
 }) => {
-  const renderSeeds = (count: number, ownerColor: string, maxShow = 12, animateLast = false) => {
+  const renderSeeds = (count: number, owner: 1 | 2, maxShow = 12, animateLast = false) => {
     const shown = Math.min(count, maxShow);
+    const ownerColor = owner === 1 ? theme.p1Color : theme.p2Color;
     return (
       <div className="relative aspect-square w-full max-w-8 sm:max-w-12 pointer-events-none">
         {Array.from({ length: shown }).map((_, i) => {
@@ -30,14 +31,15 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
           return (
             <span
               key={i}
-              className={`absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${animateLast && i === shown - 1 ? 'animate-seed-pop' : ''}`}
+              className={`absolute w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${animateLast && i === shown - 1 ? 'animate-seed-pop ' : ''}${owner === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
               style={{
                 left: `calc(50% + ${ox * 0.45}%)`,
                 top: `calc(50% + ${oy * 0.45}%)`,
                 transform: 'translate(-50%, -50%)',
                 backgroundColor: i % 2 === 0 ? ownerColor : theme.accent,
+                '--coin-turn-glow': owner === 1 ? theme.p1Glow : theme.p2Glow,
                 boxShadow: `0 1px 2px rgba(0,0,0,${theme.isDark ? 0.42 : 0.18})`,
-              }}
+              } as React.CSSProperties}
             />
           );
         })}
@@ -49,7 +51,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
     const count = state.pits[pitIdx];
     const canPlay = !disabled && state.winner === null && isOwnerTurn && count > 0;
     const isLast = state.lastPit === pitIdx;
-    const color = pitIdx < 6 ? theme.p1Color : theme.p2Color;
+    const owner = (pitIdx < 6 ? 1 : 2) as 1 | 2;
 
     return (
       <button
@@ -69,7 +71,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             boxShadow: `inset 0 3px 8px rgba(0,0,0,${theme.isDark ? 0.4 : 0.1})`,
           }}
         >
-          {renderSeeds(count, color, 12, isLast)}
+          {renderSeeds(count, owner, 12, isLast)}
         </div>
         <span
           className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full"
@@ -115,7 +117,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p2Color }}>
               P2
             </span>
-            {renderSeeds(state.pits[13], theme.p2Color, 13, state.lastPit === 13)}
+            {renderSeeds(state.pits[13], 2, 13, state.lastPit === 13)}
             <span className="text-lg font-mono font-bold" style={{ color: theme.textPrimary }}>
               {state.pits[13]}
             </span>
@@ -145,7 +147,7 @@ export const MancalaBoard: React.FC<MancalaBoardProps> = ({
             <span className="text-[11px] font-semibold uppercase" style={{ color: theme.p1Color }}>
               P1
             </span>
-            {renderSeeds(state.pits[6], theme.p1Color, 13, state.lastPit === 6)}
+            {renderSeeds(state.pits[6], 1, 13, state.lastPit === 6)}
             <span className="text-lg font-mono font-bold" style={{ color: theme.textPrimary }}>
               {state.pits[6]}
             </span>

@@ -1,5 +1,5 @@
 export type Player = 1 | 2;
-export type GameMode = 'ai' | 'local' | 'online';
+export type GameMode = 'ai' | 'local' | 'online' | 'solo';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 export type ThemeId = 'paper' | 'stackdome';
 
@@ -13,9 +13,12 @@ export type GameId =
   | 'checkers'
   | 'mancala'
   | 'gomoku'
-  | 'dots-and-boxes';
+  | 'dots-and-boxes'
+  | '2048'
+  | 'minesweeper'
+  | 'word-guess';
 
-export type GameCategory = 'morris' | 'classic';
+export type GameCategory = 'morris' | 'classic' | 'arcade';
 
 export interface GameMeta {
   id: GameId;

@@ -15,7 +15,7 @@ export interface PlayerPreferences {
 export interface SavedMatch {
   state: unknown;
   history: unknown[];
-  mode: 'ai' | 'local';
+  mode: 'ai' | 'local' | 'solo';
   difficulty: Difficulty;
   savedAt: number;
 }
@@ -60,7 +60,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isGameId(value: unknown): value is GameId {
-  return value === 'three-mens-morris' || value === 'six-mens-morris' || value === 'nine-mens-morris' || value === 'twelve-mens-morris' || value === 'connect4' || value === 'reversi' || value === 'checkers' || value === 'mancala' || value === 'gomoku' || value === 'dots-and-boxes';
+  return value === 'three-mens-morris' || value === 'six-mens-morris' || value === 'nine-mens-morris' || value === 'twelve-mens-morris' || value === 'connect4' || value === 'reversi' || value === 'checkers' || value === 'mancala' || value === 'gomoku' || value === 'dots-and-boxes' || value === '2048' || value === 'minesweeper' || value === 'word-guess';
 }
 
 function normalizeThemeId(value: unknown): ThemeId | null {
@@ -106,7 +106,7 @@ function readMatches(): Partial<Record<GameId, SavedMatch>> {
   const matches: Partial<Record<GameId, SavedMatch>> = {};
   for (const [key, rawMatch] of Object.entries(value.matches)) {
     if (!isGameId(key) || !isRecord(rawMatch)) continue;
-    if ((rawMatch.mode !== 'ai' && rawMatch.mode !== 'local') || !isDifficulty(rawMatch.difficulty)) continue;
+    if ((rawMatch.mode !== 'ai' && rawMatch.mode !== 'local' && rawMatch.mode !== 'solo') || !isDifficulty(rawMatch.difficulty)) continue;
     if (!Array.isArray(rawMatch.history) || typeof rawMatch.savedAt !== 'number' || !isRecord(rawMatch.state)) continue;
     matches[key] = {
       state: rawMatch.state,

@@ -3,7 +3,7 @@ import { GAMES } from '../games/registry';
 
 export type BoardCraftRoute =
   | { screen: 'library'; roomCode?: string }
-  | { screen: 'game'; gameId: GameId; mode?: 'ai' | 'local'; roomCode?: string }
+  | { screen: 'game'; gameId: GameId; mode?: 'ai' | 'local' | 'solo'; roomCode?: string }
   | { screen: 'not-found'; path: string; roomCode?: string };
 
 function normalizeRoomCode(value: string | null): string | undefined {
@@ -33,7 +33,7 @@ export function parseBoardCraftRoute(pathname: string, search: string): BoardCra
   if (!game) return { screen: 'not-found', path: pathname, roomCode };
 
   const requestedMode = params.get('mode');
-  const mode = requestedMode === 'ai' || requestedMode === 'local' ? requestedMode : undefined;
+  const mode = requestedMode === 'ai' || requestedMode === 'local' || requestedMode === 'solo' ? requestedMode : undefined;
   return { screen: 'game', gameId: game.id, mode, roomCode };
 }
 

@@ -128,7 +128,10 @@ export const GomokuBoard: React.FC<GomokuBoardProps> = ({
                   )}
 
                   {cell !== null && (
-                    <g className={last ? 'animate-piece-enter' : undefined}>
+                    <g
+                      className={`${last ? 'animate-piece-enter ' : ''}${cell === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
+                      style={{ '--coin-turn-glow': cell === 1 ? theme.p1Glow : theme.p2Glow } as React.CSSProperties}
+                    >
                       <circle
                         cx={coord(c)}
                         cy={coord(r)}

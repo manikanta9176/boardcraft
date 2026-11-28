@@ -59,6 +59,8 @@ import {
 } from './games/morris/engine';
 import { MORRIS_TOPOLOGIES, MorrisVariantId } from './games/morris/topologies';
 import { GAMES } from './games/registry';
+import { ArcadeState, createArcadeState, save2048BestScore } from './games/arcade';
+import { ArcadeBoard } from './components/ArcadeBoard';
 import {
   ReversiState,
   applyReversiMove,
@@ -91,7 +93,8 @@ type AnyGameState =
   | { kind: 'checkers'; data: CheckersState }
   | { kind: 'mancala'; data: MancalaState }
   | { kind: 'gomoku'; data: GomokuState }
-  | { kind: 'dots-and-boxes'; data: DotsBoxesState };
+  | { kind: 'dots-and-boxes'; data: DotsBoxesState }
+  | { kind: 'arcade'; data: ArcadeState };
 
 function isMorrisId(id: GameId): id is MorrisVariantId {
   return (
@@ -117,18 +120,22 @@ function createInitialGameState(id: GameId): AnyGameState {
       return { kind: 'gomoku', data: createInitialGomokuState() };
     case 'dots-and-boxes':
       return { kind: 'dots-and-boxes', data: createInitialDotsBoxesState() };
+    case '2048':
+    case 'minesweeper':
+    case 'word-guess':
+      return { kind: 'arcade', data: createArcadeState(id) };
   }
 }
 
 function isGameId(value: unknown): value is GameId {
-  return typeof value === 'string' && GAMES.some((game) => game.id === value);
+  return typeof value === 'string' && GAMES.some((game) => game.id === value && game.category !== 'arcade');
 }
 
 function isAnyGameState(value: unknown): value is AnyGameState {
   if (!value || typeof value !== 'object' || !('kind' in value) || !('data' in value)) return false;
   const candidate = value as { kind?: unknown; data?: { turn?: unknown; winner?: unknown } };
   return (
-    ['morris', 'connect4', 'reversi', 'checkers', 'mancala', 'gomoku', 'dots-and-boxes'].includes(String(candidate.kind)) &&
+    ['morris', 'connect4', 'reversi', 'checkers', 'mancala', 'gomoku', 'dots-and-boxes', 'arcade'].includes(String(candidate.kind)) &&
     !!candidate.data && typeof candidate.data === 'object' && !Array.isArray(candidate.data) &&
     (candidate.data.turn === 1 || candidate.data.turn === 2) &&
     (candidate.data.winner === null || candidate.data.winner === 1 || candidate.data.winner === 2 || candidate.data.winner === 'draw')
@@ -176,6 +183,27 @@ function isValidStateForGame(gameId: GameId, value: unknown): value is AnyGameSt
       return isGrid(value.data.hEdges, 5, 4) && isGrid(value.data.vEdges, 4, 5) && isGrid(value.data.boxes, 4, 4) &&
         !!value.data.scores &&
         Number.isInteger(value.data.scores[1]) && Number.isInteger(value.data.scores[2]);
+    case 'arcade':
+      if (value.data.gameId !== gameId) return false;
+      if (value.data.gameId === '2048') {
+        return isGrid(value.data.board, 4, 4, (cell) => typeof cell === 'number' && Number.isInteger(cell) && cell >= 0 && (cell === 0 || (cell & (cell - 1)) === 0)) &&
+          Number.isInteger(value.data.score) && value.data.score >= 0 && Number.isInteger(value.data.best) && value.data.best >= value.data.score &&
+          typeof value.data.reached2048 === 'boolean' && typeof value.data.over === 'boolean';
+      }
+      if (value.data.gameId === 'minesweeper') {
+        return isGrid(value.data.board, 9, 9, (cell) => {
+          if (!cell || typeof cell !== 'object') return false;
+          const tile = cell as Record<string, unknown>;
+          return typeof tile.mine === 'boolean' && Number.isInteger(tile.adjacent) && Number(tile.adjacent) >= 0 && Number(tile.adjacent) <= 8 &&
+            typeof tile.revealed === 'boolean' && typeof tile.flagged === 'boolean';
+        }) &&
+          value.data.mineCount === 10 && Number.isInteger(value.data.flags) && value.data.flags >= 0 && value.data.flags <= 10 &&
+          ['playing', 'won', 'lost'].includes(value.data.status);
+      }
+      return /^[A-Z]{5}$/.test(value.data.target) && Array.isArray(value.data.guesses) && value.data.guesses.length <= 6 &&
+        value.data.guesses.every((word) => typeof word === 'string' && /^[A-Z]{5}$/.test(word)) &&
+        typeof value.data.current === 'string' && /^[A-Z]{0,5}$/.test(value.data.current) &&
+        ['playing', 'won', 'lost'].includes(value.data.status);
   }
 }
 
@@ -211,7 +239,7 @@ export function App() {
   const [boot] = useState(getBootState);
   const initialMode = boot.route.screen === 'game' && boot.route.mode
     ? boot.route.mode
-    : boot.savedMatch?.mode ?? 'ai';
+    : boot.savedMatch?.mode ?? (GAMES.find((game) => game.id === boot.activeGameId)?.category === 'arcade' ? 'solo' : 'ai');
   const [activeGameId, setActiveGameId] = useState<GameId>(boot.activeGameId);
   const [mode, setMode] = useState<GameMode>(initialMode);
   const [difficulty, setDifficulty] = useState<Difficulty>(boot.savedMatch?.difficulty ?? boot.preferences.difficulty);
@@ -266,10 +294,10 @@ export function App() {
 
   useEffect(() => {
     document.title = notFoundPath
-      ? 'Game not found — BoardCraft'
+      ? 'Game not found — PlayDeck'
       : showLobby
-        ? 'BoardCraft — Classic Strategy, Morris & Online Multiplayer'
-        : `${activeMeta.name} — BoardCraft`;
+        ? 'PlayDeck — Board, Arcade & Daily Games'
+        : `${activeMeta.name} — PlayDeck`;
   }, [activeMeta.name, notFoundPath, showLobby]);
 
   useEffect(() => {
@@ -465,7 +493,7 @@ export function App() {
         if (!isGameId(message.gameId)) return;
         const remotePlayer: Player = host ? (hostPlayerRef.current === 1 ? 2 : 1) : hostPlayerRef.current;
         const current = gameStateRef.current;
-        if (message.gameId !== activeGameIdRef.current || current.data.turn !== remotePlayer) return;
+        if (current.kind === 'arcade' || message.gameId !== activeGameIdRef.current || current.data.turn !== remotePlayer) return;
         try {
           const result = applyRemoteMove(current, message.payload);
           if (!result) return;
@@ -715,7 +743,9 @@ export function App() {
       if (mode === 'online') resetConnection();
       const saved = restoreSavedMatch(route.gameId);
       const nextState = saved?.state ?? createInitialGameState(route.gameId);
-      const nextMode = route.mode ?? saved?.mode ?? (mode === 'online' ? 'local' : 'ai');
+      const category = GAMES.find((game) => game.id === route.gameId)?.category;
+      const fallbackMode: GameMode = category === 'arcade' ? 'solo' : mode === 'online' || mode === 'solo' ? 'local' : 'ai';
+      const nextMode = route.mode ?? saved?.mode ?? fallbackMode;
       setActiveGameId(route.gameId);
       activeGameIdRef.current = route.gameId;
       setMode(nextMode);
@@ -744,9 +774,11 @@ export function App() {
   }, [handleBrowserNavigation]);
 
   const handleSelectGame = (id: GameId) => {
-    if (mode === 'online' && !isHost) return;
+    const targetGame = GAMES.find((game) => game.id === id);
+    if (!targetGame || (mode === 'online' && (!isHost || targetGame.category === 'arcade'))) return;
     const saved = mode === 'online' ? null : restoreSavedMatch(id);
-    const nextMode = saved?.mode ?? mode;
+    const fallbackMode: GameMode = targetGame.category === 'arcade' ? 'solo' : mode === 'online' || mode === 'solo' ? 'ai' : mode;
+    const nextMode = saved?.mode ?? fallbackMode;
     setActiveGameId(id);
     activeGameIdRef.current = id;
     if (saved) {
@@ -796,6 +828,25 @@ export function App() {
       sendNetworkMessage({ type: 'MOVE', gameId: activeGameIdRef.current, payload });
     }
   }, [mode, sendNetworkMessage]);
+
+  const handleArcadeStateChange = useCallback((next: ArcadeState, recordUndo = true) => {
+    const current = gameStateRef.current;
+    if (current.kind !== 'arcade' || current.data.gameId !== next.gameId || current.data === next) return;
+    let updated = next;
+    if (current.data.gameId === '2048' && next.gameId === '2048' && current.data.best > next.best) {
+      updated = { ...next, best: current.data.best };
+    }
+    if (updated.gameId === '2048') save2048BestScore(updated.best);
+    const nextState: AnyGameState = { kind: 'arcade', data: updated };
+    if (recordUndo) pushState(nextState);
+    else {
+      gameStateRef.current = nextState;
+      setGameState(nextState);
+    }
+    if (updated.gameId === 'minesweeper' && updated.status === 'lost') sound.capture();
+    else if (updated.gameId === '2048' && current.data.gameId === '2048' && updated.score > current.data.score) sound.move();
+    else if (recordUndo) sound.place();
+  }, [pushState]);
 
   const handleUndo = () => {
     if (history.length === 0 || aiThinking || mode === 'online') return;
@@ -1101,10 +1152,23 @@ export function App() {
           gameOverSubtitle: `Final boxes: ${s.scores[1]} – ${s.scores[2]}`,
         };
       }
+      case 'arcade': {
+        const score = gameState.data.gameId === '2048'
+          ? gameState.data.score
+          : gameState.data.gameId === 'minesweeper'
+            ? gameState.data.board.flat().filter((tile) => tile.revealed && !tile.mine).length
+            : gameState.data.guesses.length;
+        return {
+          p1Metric: { value: String(score), label: 'score' } satisfies PlayerMetric,
+          p2Metric: { value: '—', label: 'solo' } satisfies PlayerMetric,
+          statusHint: undefined,
+          gameOverSubtitle: '',
+        };
+      }
     }
   }, [gameState]);
 
-  const launchGame = (id: GameId, nextMode: 'ai' | 'local') => {
+  const launchGame = (id: GameId, nextMode: 'ai' | 'local' | 'solo') => {
     setActiveGameId(id);
     activeGameIdRef.current = id;
     setMode(nextMode);
@@ -1203,7 +1267,7 @@ export function App() {
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={() => setSoundEnabled((v) => !v)}
-              canUndo={history.length > 0 && !aiThinking && mode !== 'online'}
+              canUndo={history.length > 0 && !aiThinking && mode !== 'online' && !(gameState.kind === 'arcade' && gameState.data.gameId === 'word-guess')}
               canReset={mode !== 'online' || isHost}
               onUndo={handleUndo}
               onReset={() => resetGame(activeGameId)}
@@ -1228,17 +1292,19 @@ export function App() {
                 />
               )}
 
-              <PlayerBar
-                turn={turn}
-                winner={winner}
-                mode={mode}
-                aiThinking={aiThinking}
-                localPlayer={localPlayer}
-                theme={theme}
-                p1Metric={p1Metric}
-                p2Metric={p2Metric}
-                statusHint={winner === null ? statusHint : undefined}
-              />
+              {activeMeta.category !== 'arcade' && (
+                <PlayerBar
+                  turn={turn}
+                  winner={winner}
+                  mode={mode}
+                  aiThinking={aiThinking}
+                  localPlayer={localPlayer}
+                  theme={theme}
+                  p1Metric={p1Metric}
+                  p2Metric={p2Metric}
+                  statusHint={winner === null ? statusHint : undefined}
+                />
+              )}
 
               {winner !== null && (
                 <GameOverBanner
@@ -1274,6 +1340,9 @@ export function App() {
                 )}
                 {gameState.kind === 'dots-and-boxes' && (
                   <DotsBoxesBoard state={gameState.data} theme={theme} disabled={humanDisabled} onDrawEdge={handleDotsEdge} />
+                )}
+                {gameState.kind === 'arcade' && (
+                  <ArcadeBoard state={gameState.data} theme={theme} onStateChange={handleArcadeStateChange} onRestart={() => resetGame(activeGameId)} />
                 )}
               </div>
             </main>

@@ -81,14 +81,15 @@ export const Connect4Board: React.FC<Connect4BoardProps> = ({
                   {cell !== null && (
                     <div
                       key={`${r}-${c}-${cell}`}
-                      className="w-[86%] h-[86%] rounded-full animate-drop-in flex items-center justify-center"
+                      className={`w-[86%] h-[86%] rounded-full animate-drop-in flex items-center justify-center ${cell === state.turn && state.winner === null ? 'coin-turn-active' : ''}`}
                       style={{
                         backgroundColor: cell === 1 ? theme.p1Color : theme.p2Color,
                         border: `2px solid ${win ? theme.validHighlight : cell === 1 ? theme.p1Stroke : theme.p2Stroke}`,
+                        '--coin-turn-glow': cell === 1 ? theme.p1Glow : theme.p2Glow,
                         boxShadow: win
                           ? `0 0 0 3px ${theme.validHighlight}66`
                           : `0 2px 6px rgba(0,0,0,${theme.isDark ? 0.32 : 0.14})`,
-                      }}
+                      } as React.CSSProperties}
                     >
                       {last && (
                         <span

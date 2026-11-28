@@ -30,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const mobilePanelRef = useRef<HTMLDivElement>(null);
   const morrisGames = GAMES.filter((g) => g.category === 'morris');
   const classicGames = GAMES.filter((g) => g.category === 'classic');
+  const arcadeGames = GAMES.filter((g) => g.category === 'arcade');
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -134,10 +135,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
           <div>
             <div className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>
-              BoardCraft
+              PlayDeck
             </div>
             <div className="text-[11px]" style={{ color: theme.textMuted }}>
-              {GAMES.length} Classic Strategy Games
+              {GAMES.length} games & puzzles
             </div>
           </div>
         </div>
@@ -173,6 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         {renderGroup('Morris games', morrisGames)}
         {renderGroup('Other classics', classicGames)}
+        {renderGroup('Arcade & puzzles', arcadeGames)}
       </div>
 
       <div
@@ -182,7 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: theme.validHighlight, boxShadow: `0 0 10px ${theme.validHighlight}88` }} />
         <div>
           <div className="text-xs font-semibold" style={{ color: theme.textPrimary }}>Ready to play</div>
-          <div className="text-[10px] mt-0.5" style={{ color: theme.textMuted }}>10 classic boards</div>
+          <div className="text-[10px] mt-0.5" style={{ color: theme.textMuted }}>13 ways to play</div>
         </div>
       </div>
     </div>
