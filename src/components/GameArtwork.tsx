@@ -172,6 +172,22 @@ const ArcadeArtwork: React.FC<{ gameId: GameId; theme: ThemePalette }> = ({ game
       </g>;
     })}</g>;
   }
+  if (gameId === 'snake') return <g>
+    <rect x="52" y="9" width="156" height="128" rx="14" fill={theme.bgBoardAlt} stroke={theme.border} />
+    <path d="M82 43h41q11 0 11 11v30q0 10 10 10h21" fill="none" stroke={theme.validHighlight} strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="82" cy="43" r="7" fill={theme.accent} /><circle cx="165" cy="94" r="6" fill={theme.captureHighlight} />
+  </g>;
+  if (gameId === 'pocket-racer') return <g>
+    <rect x="68" y="8" width="124" height="130" rx="16" fill={theme.bgBoardAlt} stroke={theme.border} />
+    <path d="M109 11v124m42-124v124" stroke={theme.boardLine} strokeWidth="1.3" strokeDasharray="5 6" />
+    <path d="M87 68h16v25H87zm71-38h16v25h-16z" fill={theme.captureHighlight} opacity=".88" />
+    <path d="M128 97h16v27h-16z" fill={theme.validHighlight} />
+  </g>;
+  if (gameId === 'yahtzee') return <g>{[0, 1, 2, 3, 4].map((index) => {
+    const x = 58 + index * 31;
+    const y = index % 2 ? 58 : 34;
+    return <g key={index}><rect x={x} y={y} width="25" height="25" rx="6" fill={theme.bgSurface} stroke={theme.border} /><circle cx={x + 12.5} cy={y + 12.5} r="3.4" fill={index < 3 ? theme.validHighlight : theme.accent} /></g>;
+  })}<path d="M65 112h130" stroke={theme.boardLine} strokeWidth="2" strokeLinecap="round" /><circle cx="94" cy="112" r="3" fill={theme.validHighlight} /><circle cx="130" cy="112" r="3" fill={theme.validHighlight} /></g>;
   const cells = ['W', 'O', 'R', 'D', 'S'];
   return <g>{Array.from({ length: 15 }, (_, index) => {
     const row = Math.floor(index / 5);
@@ -187,10 +203,34 @@ const ArcadeArtwork: React.FC<{ gameId: GameId; theme: ThemePalette }> = ({ game
   })}</g>;
 };
 
+const TabletopArtwork: React.FC<{ gameId: GameId; theme: ThemePalette }> = ({ gameId, theme }) => {
+  if (gameId === 'chess') return <g>{Array.from({ length: 8 }, (_, row) => Array.from({ length: 8 }, (_, col) => <rect key={`${row}-${col}`} x={79 + col * 13} y={19 + row * 13} width="13" height="13" fill={(row + col) % 2 ? theme.bgBoardAlt : theme.bgSurface} />))}<text x="130" y="74" textAnchor="middle" fontSize="51" fill={theme.p2Color}>♞</text><text x="105" y="42" textAnchor="middle" fontSize="24" fill={theme.p1Color}>♙</text><text x="155" y="107" textAnchor="middle" fontSize="24" fill={theme.p1Color}>♙</text></g>;
+  if (gameId === 'ludo' || gameId === 'ashta-chamma') return <g>
+    <rect x="69" y="8" width="122" height="130" rx="15" fill={theme.bgBoardAlt} stroke={theme.border} />
+    <path d="M92 18h77v31h-24v24h24v47H92V96h24V72H92Z" fill={theme.bgSurface} stroke={theme.border} strokeWidth="1.2" />
+    <path d="M116 72h24v24h-24z" fill={theme.accentSoft} stroke={theme.border} />
+    <circle cx="100" cy="28" r="7" fill={theme.p1Color} /><circle cx="158" cy="112" r="7" fill={theme.p2Color} />
+    <circle cx="126" cy="83" r="4" fill={theme.accent} /><circle cx="134" cy="83" r="4" fill={theme.validHighlight} />
+  </g>;
+  if (gameId === 'carrom') return <g>
+    <rect x="64" y="7" width="132" height="132" rx="14" fill={theme.bgBoardAlt} stroke={theme.border} />
+    <rect x="73" y="16" width="114" height="114" rx="9" fill={theme.bgBoard} stroke={theme.accent} strokeOpacity=".45" />
+    {[80, 180].flatMap((x) => [23, 123].map((y) => <circle key={`${x}-${y}`} cx={x} cy={y} r="6" fill={theme.bgApp} />))}
+    <circle cx="130" cy="73" r="18" fill="none" stroke={theme.boardLine} strokeOpacity=".5" />
+    <circle cx="130" cy="73" r="6" fill={theme.captureHighlight} /><circle cx="119" cy="73" r="5" fill={theme.p1Color} /><circle cx="141" cy="73" r="5" fill={theme.p2Color} />
+  </g>;
+  if (gameId === 'tambola') return <g>
+    <rect x="43" y="23" width="174" height="100" rx="13" fill={theme.bgSurface} stroke={theme.border} />
+    {Array.from({ length: 15 }, (_, index) => { const x = 53 + index % 5 * 31; const y = 34 + Math.floor(index / 5) * 27; const active = [0, 2, 4, 6, 8, 10, 12].includes(index); return <g key={index}><rect x={x} y={y} width="26" height="22" rx="4" fill={active ? theme.validHighlight : theme.bgApp} stroke={theme.border} /><text x={x + 13} y={y + 15} textAnchor="middle" fontSize="10" fontWeight="700" fill={active ? '#FFFFFF' : theme.textPrimary}>{[4, 12, 21, 33, 46, 53, 67, 72, 88, 9, 18, 25, 39, 58, 81][index]}</text></g>; })}
+  </g>;
+  if (gameId === 'dice-duel' || gameId === 'yahtzee') return <g>{[0, 1, 2].map((index) => { const x = 75 + index * 43; const y = index === 1 ? 45 : 58; return <g key={index}><rect x={x} y={y} width="34" height="34" rx="8" fill={theme.bgSurface} stroke={theme.border} /><circle cx={x + 17} cy={y + 17} r="3.5" fill={index === 1 ? theme.validHighlight : theme.accent} /></g>; })}</g>;
+  return <g><rect x="82" y="20" width="96" height="106" rx="18" fill={theme.bgBoardAlt} stroke={theme.border} /><path d="M130 32v78m-28-39h56" stroke={theme.boardLine} strokeWidth="2" strokeDasharray="5 5" /><circle cx="130" cy="93" r="8" fill={theme.p1Color} /><circle cx="130" cy="42" r="8" fill={theme.p2Color} /><circle cx="103" cy="71" r="8" fill={theme.captureHighlight} /></g>;
+};
+
 export const GameArtwork: React.FC<GameArtworkProps> = ({ gameId, theme, className = '' }) => {
   let artwork: React.ReactNode;
   if (gameId.includes('morris')) artwork = <MorrisArtwork gameId={gameId} theme={theme} />;
-  else if (gameId === '2048' || gameId === 'minesweeper' || gameId === 'word-guess') artwork = <ArcadeArtwork gameId={gameId} theme={theme} />;
+  else if (['2048', 'minesweeper', 'word-guess', 'snake', 'pocket-racer', 'yahtzee'].includes(gameId)) artwork = <ArcadeArtwork gameId={gameId} theme={theme} />;
   else {
     switch (gameId) {
       case 'connect4': artwork = <ConnectArtwork theme={theme} />; break;
@@ -199,6 +239,7 @@ export const GameArtwork: React.FC<GameArtworkProps> = ({ gameId, theme, classNa
       case 'mancala': artwork = <MancalaArtwork theme={theme} />; break;
       case 'gomoku': artwork = <GomokuArtwork theme={theme} />; break;
       case 'dots-and-boxes': artwork = <DotsArtwork theme={theme} />; break;
+      default: artwork = <TabletopArtwork gameId={gameId} theme={theme} />; break;
     }
   }
 

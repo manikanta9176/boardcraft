@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Bot, Clock3, Globe2, Grid3X3, Menu, RotateCcw, Sparkles, Users2, Wifi } from 'lucide-react';
 import { GAMES } from '../games/registry';
+import { getGameModes } from '../games/registry';
 import { GameCategory, GameId, GameMode, ThemePalette } from '../types/game';
 import { GameArtwork } from './GameArtwork';
 import { ThemeToggle } from './ThemeToggle';
+import { AudioMenu } from './AudioMenu';
+import { MusicTrackId } from '../utils/music';
 
 interface LobbyViewProps {
   theme: ThemePalette;
@@ -14,11 +17,17 @@ interface LobbyViewProps {
   resumeGameId: GameId | null;
   onResumeGame: () => void;
   storageUnavailable: boolean;
+  musicEnabled: boolean;
+  musicTrack: MusicTrackId;
+  soundEnabled: boolean;
+  onToggleMusic: () => void;
+  onSelectMusicTrack: (track: MusicTrackId) => void;
+  onToggleSound: () => void;
 }
 
 const MARKED_GAME: GameId = 'nine-mens-morris';
 
-export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpenMultiplayer, onOpenMenu, onToggleTheme, resumeGameId, onResumeGame, storageUnavailable }) => {
+export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpenMultiplayer, onOpenMenu, onToggleTheme, resumeGameId, onResumeGame, storageUnavailable, musicEnabled, musicTrack, soundEnabled, onToggleMusic, onSelectMusicTrack, onToggleSound }) => {
   const [filter, setFilter] = useState<'all' | GameCategory>('all');
   const visibleGames = filter === 'all' ? GAMES : GAMES.filter((game) => game.category === filter);
   const featuredGame = GAMES.find((game) => game.id === MARKED_GAME) ?? GAMES[0];
@@ -36,7 +45,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
             <span className="text-sm font-bold tracking-tight" style={{ color: theme.textPrimary }}>PlayDeck</span>
           </div>
         </div>
-        <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        <div className="flex items-center gap-2">
+          <AudioMenu theme={theme} soundEnabled={soundEnabled} onToggleSound={onToggleSound} musicEnabled={musicEnabled} musicTrack={musicTrack} onToggleMusic={onToggleMusic} onSelectMusicTrack={onSelectMusicTrack} />
+          <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+        </div>
       </div>
 
       <section className="lobby-hero relative isolate overflow-hidden rounded-[28px]" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}` }} aria-labelledby="lobby-title">
@@ -61,7 +73,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
                 {resumeGame ? <RotateCcw className="w-4 h-4" /> : <Grid3X3 className="w-4 h-4" />}
                 {resumeGame ? `Continue ${resumeGame.shortName}` : 'Find your game'}
               </button>
-              <button onClick={() => onOpenMultiplayer('online')} className="action-secondary min-h-11 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}>
+              <button onClick={() => onOpenMultiplayer('online', 'nine-mens-morris')} className="action-secondary min-h-11 inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}>
                 <Globe2 className="w-4 h-4" />
                 Invite a friend
               </button>
@@ -113,6 +125,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
               { id: 'all', label: `All ${GAMES.length}` },
               { id: 'morris', label: 'Morris' },
               { id: 'classic', label: 'Classics' },
+              { id: 'tabletop', label: 'Tabletop' },
               { id: 'arcade', label: 'Arcade' },
             ] as const).map((item) => (
               <button key={item.id} onClick={() => setFilter(item.id)} aria-pressed={filter === item.id} className="min-h-11 rounded-full px-4 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: filter === item.id ? theme.accent : 'transparent', color: filter === item.id ? theme.bgSurface : theme.textMuted, outlineColor: theme.validHighlight }}>
@@ -124,11 +137,16 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
 
         <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
           {visibleGames.map((game, index) => (
+            (() => {
+              const modes = getGameModes(game);
+              const soloOnly = modes.length === 1 && modes[0] === 'solo';
+              const columnCount = modes.length >= 3 ? 'grid-cols-[1fr_auto_auto]' : modes.length === 2 ? 'grid-cols-2' : 'grid-cols-1';
+              return (
             <article key={game.id} className="game-card group relative overflow-hidden rounded-[24px] transition-all duration-200" style={{ backgroundColor: theme.bgSurface, border: `1px solid ${theme.border}`, animationDelay: `${index * 35}ms` }}>
               <div className="game-art relative p-2.5 pb-0">
                 <GameArtwork gameId={game.id} theme={theme} className="block w-full h-[126px] sm:h-[132px] rounded-[15px]" />
                 <span className="absolute left-5 top-4 rounded-full px-2.5 py-1 text-[10px] font-bold" style={{ backgroundColor: theme.bgApp, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
-                  {game.category === 'morris' ? 'Morris family' : game.category === 'arcade' ? 'Arcade & puzzle' : 'Classic board'}
+                  {game.category === 'morris' ? 'Morris family' : game.category === 'arcade' ? 'Arcade & puzzle' : game.category === 'tabletop' ? 'Tabletop & dice' : 'Classic board'}
                 </span>
                 <span className="absolute right-5 top-4 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold" style={{ backgroundColor: theme.bgApp, color: theme.textSecondary, border: `1px solid ${theme.border}` }}>
                   <Clock3 className="w-3 h-3" />{game.duration}
@@ -137,19 +155,21 @@ export const LobbyView: React.FC<LobbyViewProps> = ({ theme, onLaunchGame, onOpe
               <div className="p-4 sm:p-5">
                 <h3 className="display-face text-[1.08rem] font-bold tracking-[-.035em]" style={{ color: theme.textPrimary }}>{game.name}</h3>
                 <p className="mt-1.5 min-h-[36px] text-xs leading-relaxed" style={{ color: theme.textSecondary }}>{game.tagline}</p>
-                <div className={`mt-4 grid gap-2 ${game.category === 'arcade' ? 'grid-cols-1' : 'grid-cols-[1fr_auto_auto]'}`}>
-                  {game.category === 'arcade' ? (
+                <div className={`mt-4 grid gap-2 ${columnCount}`}>
+                  {soloOnly ? (
                     <button onClick={() => onLaunchGame(game.id, 'solo')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#FFFFFF', outlineColor: theme.validHighlight }}><Sparkles className="w-3.5 h-3.5" />Play solo</button>
                   ) : (
                     <>
-                      <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#FFFFFF', outlineColor: theme.validHighlight }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>
-                      <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.textPrimary, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Users2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">2P</span></button>
-                      <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Globe2 className="w-4 h-4" /></button>
+                      {modes.includes('ai') && <button onClick={() => onLaunchGame(game.id, 'ai')} className="min-h-11 inline-flex items-center justify-center gap-1.5 rounded-full px-4 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.accent, color: theme.isDark ? theme.bgApp : '#FFFFFF', outlineColor: theme.validHighlight }}><Bot className="w-3.5 h-3.5" />Play vs AI</button>}
+                      {modes.includes('local') && <button onClick={() => onLaunchGame(game.id, 'local')} title={`Play ${game.name} pass and play`} className="min-h-11 min-w-11 inline-flex items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: modes.includes('ai') ? theme.bgBoard : theme.accent, color: modes.includes('ai') ? theme.textPrimary : theme.isDark ? theme.bgApp : '#FFFFFF', border: modes.includes('ai') ? `1px solid ${theme.border}` : undefined, outlineColor: theme.validHighlight }}><Users2 className="w-3.5 h-3.5" /><span>{modes.includes('ai') ? '2P' : 'Play 2P'}</span></button>}
+                      {modes.includes('online') && <button onClick={() => onOpenMultiplayer('online', game.id)} title={`Invite a friend to ${game.name}`} aria-label={`Invite a friend to ${game.name}`} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2" style={{ backgroundColor: theme.bgBoard, color: theme.accent, border: `1px solid ${theme.border}`, outlineColor: theme.validHighlight }}><Globe2 className="w-4 h-4" /></button>}
                     </>
                   )}
                 </div>
               </div>
             </article>
+              );
+            })()
           ))}
         </div>
       </section>

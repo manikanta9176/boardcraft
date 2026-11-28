@@ -46,6 +46,15 @@ export function createInitialGameState(id: GameId): AnyGameState {
     case '2048':
     case 'minesweeper':
     case 'word-guess':
+    case 'chess':
+    case 'ludo':
+    case 'ashta-chamma':
+    case 'carrom':
+    case 'tambola':
+    case 'dice-duel':
+    case 'yahtzee':
+    case 'snake':
+    case 'pocket-racer':
       return { kind: 'arcade', data: createArcadeState(id) };
   }
   throw new Error(`Unsupported game: ${id}`);

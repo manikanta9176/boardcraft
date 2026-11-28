@@ -16,6 +16,7 @@ import {
   typeWordLetter,
 } from '../games/arcade';
 import { ThemePalette } from '../types/game';
+import { ExtraGamesBoard } from './ExtraGamesBoard';
 
 interface ArcadeBoardProps {
   state: ArcadeState;
@@ -263,5 +264,6 @@ const WordGuess: React.FC<{ state: WordGuessState; theme: ThemePalette; onChange
 export const ArcadeBoard: React.FC<ArcadeBoardProps> = ({ state, theme, onStateChange, onRestart }) => {
   if (state.gameId === '2048') return <Tiles2048 state={state} theme={theme} onChange={onStateChange} onRestart={onRestart} />;
   if (state.gameId === 'minesweeper') return <Minesweeper state={state} theme={theme} onChange={onStateChange} onRestart={onRestart} />;
-  return <WordGuess state={state} theme={theme} onChange={onStateChange} onRestart={onRestart} />;
+  if (state.gameId === 'word-guess') return <WordGuess state={state} theme={theme} onChange={onStateChange} onRestart={onRestart} />;
+  return <ExtraGamesBoard state={state} theme={theme} onChange={onStateChange} onRestart={onRestart} />;
 };

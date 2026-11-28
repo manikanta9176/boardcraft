@@ -1,7 +1,10 @@
-import { GameId } from '../types/game';
+import { GameId, Player } from '../types/game';
+import { ChessState, createChessState } from './chess';
+import { RaceState, createRaceState } from './raceGames';
+import { CarromState, createCarromState, createDiceDuelState, createRacerState, createSnakeState, createTambolaState, createYahtzeeState, DiceDuelState, RacerState, SnakeState, TambolaState, YahtzeeState } from './partyGames';
 
-export type ArcadeGameId = '2048' | 'minesweeper' | 'word-guess';
-type ArcadeBase = { turn: 1; winner: null };
+export type ArcadeGameId = '2048' | 'minesweeper' | 'word-guess' | 'chess' | 'ludo' | 'ashta-chamma' | 'carrom' | 'tambola' | 'dice-duel' | 'yahtzee' | 'snake' | 'pocket-racer';
+type ArcadeBase = { turn: Player; winner: Player | 'draw' | null };
 
 export type Tile2048State = ArcadeBase & {
   gameId: '2048';
@@ -29,7 +32,7 @@ export type WordGuessState = ArcadeBase & {
   status: 'playing' | 'won' | 'lost';
 };
 
-export type ArcadeState = Tile2048State | MinesweeperState | WordGuessState;
+export type ArcadeState = Tile2048State | MinesweeperState | WordGuessState | ChessState | RaceState | CarromState | DiceDuelState | RacerState | SnakeState | TambolaState | YahtzeeState;
 export type Move2048 = 'up' | 'right' | 'down' | 'left';
 
 const FOUR = 4;
@@ -139,6 +142,14 @@ export function createArcadeState(gameId: GameId): ArcadeState {
     const index = ((day % WORDS.length) + WORDS.length) % WORDS.length;
     return { gameId: 'word-guess', target: WORDS[index], guesses: [], current: '', status: 'playing', turn: 1, winner: null };
   }
+  if (gameId === 'chess') return createChessState();
+  if (gameId === 'ludo' || gameId === 'ashta-chamma') return createRaceState(gameId);
+  if (gameId === 'carrom') return createCarromState();
+  if (gameId === 'tambola') return createTambolaState();
+  if (gameId === 'dice-duel') return createDiceDuelState();
+  if (gameId === 'yahtzee') return createYahtzeeState();
+  if (gameId === 'snake') return createSnakeState();
+  if (gameId === 'pocket-racer') return createRacerState();
   throw new Error(`Unsupported arcade game: ${gameId}`);
 }
 
@@ -286,4 +297,62 @@ export function gradeWordGuess(guess: string, target: string): ('correct' | 'pre
     }
   }
   return result;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+function isNumber(value: unknown, min = 0, max = Number.MAX_SAFE_INTEGER): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max;
+}
+function isPair(value: unknown, size: number): value is number[] {
+  return Array.isArray(value) && value.length === size && value.every((item) => isNumber(item));
+}
+
+export function isValidArcadeState(value: unknown): value is ArcadeState {
+  if (!isRecord(value) || (value.turn !== 1 && value.turn !== 2) ||
+    !(value.winner === null || value.winner === 1 || value.winner === 2 || value.winner === 'draw')) return false;
+  switch (value.gameId) {
+    case '2048':
+      return Array.isArray(value.board) && value.board.length === 4 && value.board.every((row) => Array.isArray(row) && row.length === 4 && row.every((cell) => isNumber(cell) && (cell === 0 || (cell & (cell - 1)) === 0))) &&
+        isNumber(value.score) && isNumber(value.best, value.score) && typeof value.reached2048 === 'boolean' && typeof value.over === 'boolean';
+    case 'minesweeper':
+      return Array.isArray(value.board) && value.board.length === 9 && value.board.every((row) => Array.isArray(row) && row.length === 9 && row.every((tile) => isRecord(tile) && typeof tile.mine === 'boolean' && isNumber(tile.adjacent, 0, 8) && typeof tile.revealed === 'boolean' && typeof tile.flagged === 'boolean')) &&
+        value.mineCount === 10 && isNumber(value.flags, 0, 10) && ['playing', 'won', 'lost'].includes(String(value.status));
+    case 'word-guess':
+      return typeof value.target === 'string' && /^[A-Z]{5}$/.test(value.target) && Array.isArray(value.guesses) && value.guesses.length <= 6 && value.guesses.every((word) => typeof word === 'string' && /^[A-Z]{5}$/.test(word)) &&
+        typeof value.current === 'string' && /^[A-Z]{0,5}$/.test(value.current) && ['playing', 'won', 'lost'].includes(String(value.status));
+    case 'chess':
+      return Array.isArray(value.board) && value.board.length === 8 && value.board.every((row) => Array.isArray(row) && row.length === 8 && row.every((piece) => piece === null || (isRecord(piece) && (piece.player === 1 || piece.player === 2) && ['king', 'queen', 'rook', 'bishop', 'knight', 'pawn'].includes(String(piece.kind))))) &&
+        ['playing', 'check', 'checkmate', 'stalemate'].includes(String(value.status)) && isRecord(value.castling) && isRecord(value.castling[1]) && isRecord(value.castling[2]) && isPairOrNull(value.enPassant) && (value.lastMove === null || isRecord(value.lastMove));
+    case 'ludo':
+    case 'ashta-chamma':
+      return isRecord(value.tokens) && Array.isArray(value.tokens[1]) && value.tokens[1].length === 4 && value.tokens[1].every((step) => isNumber(step, -1, 57)) && Array.isArray(value.tokens[2]) && value.tokens[2].length === 4 && value.tokens[2].every((step) => isNumber(step, -1, 57)) &&
+        value.trackLength === (value.gameId === 'ludo' ? 52 : 28) && (value.die === null || isNumber(value.die, 1, 8)) && typeof value.lastCapture === 'boolean';
+    case 'snake':
+      return Array.isArray(value.body) && value.body.length >= 2 && value.body.every((cell) => isPair(cell, 2) && cell[0] < 18 && cell[1] < 18) && isPair(value.food, 2) && value.food[0] < 18 && value.food[1] < 18 &&
+        ['up', 'right', 'down', 'left'].includes(String(value.direction)) && isNumber(value.score) && isNumber(value.best, value.score) && ['playing', 'lost'].includes(String(value.status));
+    case 'pocket-racer':
+      return isNumber(value.lane, 0, 2) && Array.isArray(value.road) && value.road.length === 8 && value.road.every((row) => Array.isArray(row) && row.length === 3 && row.every((cell) => cell === 0 || cell === 1)) &&
+        isNumber(value.score) && isNumber(value.best, value.score) && ['playing', 'crashed'].includes(String(value.status));
+    case 'dice-duel':
+      return isRecord(value.scores) && isNumber(value.scores[1]) && isNumber(value.scores[2]) && isNumber(value.turnScore) && (value.die === null || isNumber(value.die, 1, 6)) && value.goal === 50;
+    case 'yahtzee':
+      return Array.isArray(value.dice) && value.dice.length === 5 && value.dice.every((die) => isNumber(die, 0, 6)) && Array.isArray(value.held) && value.held.length === 5 && value.held.every((held) => typeof held === 'boolean') && isNumber(value.rollsLeft, 0, 3) && isRecord(value.scores) && Object.values(value.scores).every((score) => isNumber(score)) && ['playing', 'complete'].includes(String(value.status));
+    case 'tambola': {
+      const tickets = value.tickets;
+      const rowClaims = value.rowClaims;
+      return isRecord(tickets) && [1, 2].every((player) => Array.isArray(tickets[player]) && tickets[player].length === 3 && (tickets[player] as unknown[]).every((row) => Array.isArray(row) && row.length === 9 && row.every((cell) => cell === null || isNumber(cell, 1, 90)))) &&
+        Array.isArray(value.called) && value.called.length <= 90 && value.called.every((number) => isNumber(number, 1, 90)) && isRecord(value.scores) && isNumber(value.scores[1]) && isNumber(value.scores[2]) && isRecord(rowClaims) && [1, 2].every((player) => Array.isArray(rowClaims[player]) && rowClaims[player].length === 3 && (rowClaims[player] as unknown[]).every((claim) => typeof claim === 'boolean')) && ['playing', 'complete'].includes(String(value.status));
+    }
+    case 'carrom':
+      return Array.isArray(value.discs) && value.discs.length === 14 && value.discs.every((disc) => isRecord(disc) && typeof disc.id === 'string' && (disc.owner === 1 || disc.owner === 2 || disc.owner === 'queen' || disc.owner === 'striker') && [disc.x, disc.y, disc.vx, disc.vy].every((item) => typeof item === 'number' && Number.isFinite(item)) && typeof disc.pocketed === 'boolean') &&
+        isRecord(value.scores) && isNumber(value.scores[1]) && isNumber(value.scores[2]) && isNumber(value.shots) && ['playing', 'complete'].includes(String(value.status)) && (value.lastShot === null || value.lastShot === 'clean' || value.lastShot === 'foul');
+    default:
+      return false;
+  }
+}
+
+function isPairOrNull(value: unknown): value is number[] | null {
+  return value === null || isPair(value, 2);
 }

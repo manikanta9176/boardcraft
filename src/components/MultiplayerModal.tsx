@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { ConnectionPhase, TransportKind, buildRoomInviteUrl, normalizeRoomCode } from '../multiplayer/types';
 import { GameId, ThemePalette } from '../types/game';
-import { GAMES } from '../games/registry';
+import { GAMES, getGameModes } from '../games/registry';
 import { findNearbyGames, NearbyGameListing } from '../multiplayer/nearbyDiscovery';
 import { QrCodeBox } from './QrCodeBox';
 import { NearbyQrScanner } from './NearbyQrScanner';
@@ -79,7 +79,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
   const [useQrFallback, setUseQrFallback] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [hostGameId, setHostGameId] = useState<GameId>(() =>
-    GAMES.find((game) => game.id === gameId && game.category !== 'arcade')?.id ?? GAMES.find((game) => game.category !== 'arcade')!.id,
+    GAMES.find((game) => game.id === gameId && getGameModes(game).includes('online'))?.id ?? GAMES.find((game) => getGameModes(game).includes('online'))!.id,
   );
   const [nearbyRooms, setNearbyRooms] = useState<NearbyGameListing[]>([]);
   const [nearbySearchActive, setNearbySearchActive] = useState(false);
@@ -580,7 +580,7 @@ export const MultiplayerModal: React.FC<MultiplayerModalProps> = ({
                         className="w-full rounded-xl px-3 py-2.5 text-sm outline-none"
                         style={{ backgroundColor: theme.bgSurface, color: theme.textPrimary, border: `1px solid ${theme.border}` }}
                       >
-                        {GAMES.filter((game) => game.category !== 'arcade').map((game) => <option key={game.id} value={game.id}>{game.shortName}</option>)}
+                        {GAMES.filter((game) => getGameModes(game).includes('online')).map((game) => <option key={game.id} value={game.id}>{game.shortName}</option>)}
                       </select>
                       <button onClick={() => onStartNearbyHost(hostGameId)} disabled={isBusy} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold disabled:opacity-50" style={{ backgroundColor: theme.validHighlight, color: '#FFFFFF' }}>
                         {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wifi className="h-4 w-4" />}

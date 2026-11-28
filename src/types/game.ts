@@ -16,9 +16,18 @@ export type GameId =
   | 'dots-and-boxes'
   | '2048'
   | 'minesweeper'
-  | 'word-guess';
+  | 'word-guess'
+  | 'chess'
+  | 'ludo'
+  | 'ashta-chamma'
+  | 'carrom'
+  | 'tambola'
+  | 'dice-duel'
+  | 'yahtzee'
+  | 'snake'
+  | 'pocket-racer';
 
-export type GameCategory = 'morris' | 'classic' | 'arcade';
+export type GameCategory = 'morris' | 'classic' | 'tabletop' | 'arcade';
 
 export interface GameMeta {
   id: GameId;
@@ -29,6 +38,7 @@ export interface GameMeta {
   players: string;
   duration: string;
   badge?: string;
+  modes?: GameMode[];
   rules: string[];
   tips: string[];
 }

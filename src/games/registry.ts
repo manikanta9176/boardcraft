@@ -1,4 +1,13 @@
-import { GameMeta } from '../types/game';
+import { GameMeta, GameMode } from '../types/game';
+
+export function getGameModes(game: GameMeta): GameMode[] {
+  return game.modes ?? (game.category === 'arcade' ? ['solo'] : ['ai', 'local', 'online']);
+}
+
+export function getDefaultGameMode(game: GameMeta): GameMode {
+  const modes = getGameModes(game);
+  return modes.includes('ai') ? 'ai' : modes.includes('local') ? 'local' : 'solo';
+}
 
 export const GAMES: GameMeta[] = [
   {
@@ -182,13 +191,14 @@ export const GAMES: GameMeta[] = [
   },
   {
     id: 'dots-and-boxes',
-    name: 'Dots & Boxes',
-    shortName: 'Dots & Boxes',
+    name: 'Chukkalata · Dots & Boxes',
+    shortName: 'Chukkalata',
     category: 'classic',
     tagline: 'Connect edges to claim boxes and trigger chain captures',
     players: '2 Players / vs AI',
     duration: '3–7 min',
     rules: [
+      'Chukkalata (చుక్కలాట) is a traditional Telugu pencil-and-paper game, also known as Dots & Boxes.',
       'Played on a 5×5 grid of dots (forming 16 potential boxes).',
       'Players take turns drawing a single horizontal or vertical edge between adjacent dots.',
       'Completing the 4th side of any box claims that box and grants you an immediate bonus turn.',
@@ -198,6 +208,42 @@ export const GAMES: GameMeta[] = [
       'Avoid drawing the 3rd side of a box unless forced—it hands the opponent an easy capture.',
       'Late in the game, double-dealing sacrifices can win control of long chains.',
     ],
+  },
+  {
+    id: 'chess', name: 'Chess', shortName: 'Chess', category: 'tabletop',
+    tagline: 'A calm, classic checkmate duel with full legal moves', players: '2 Players · local', duration: '10–30 min', modes: ['local'],
+    rules: ['Move the pieces by selecting one, then an available square.', 'Pawns move forward and capture diagonally; other pieces follow their familiar movement patterns.', 'Castling, en passant, and automatic queen promotion are supported.', 'Checkmate wins. Stalemate is a draw.'],
+    tips: ['Develop knights and bishops before moving the queen repeatedly.', 'Keep your king safe and watch for checks before every move.'],
+  },
+  {
+    id: 'ludo', name: 'Ludo', shortName: 'Ludo', category: 'tabletop',
+    tagline: 'Roll six to leave home, race four tokens to safety', players: '2 Players · local', duration: '10–20 min', modes: ['local'],
+    rules: ['This quick two-player table version gives each player four tokens.', 'Roll a six to bring a token onto the track. Tap one of your available tokens to move it.', 'Land on an opponent on an unprotected square to send that token home. A six or a capture earns another roll.', 'Reach the home lane and finish all four tokens to win.'],
+    tips: ['Spread your tokens so you have more choices on each roll.', 'Use safe squares to protect a lead token.'],
+  },
+  {
+    id: 'ashta-chamma', name: 'Ashta Chamma', shortName: 'Ashta Chamma', category: 'tabletop',
+    tagline: 'A Telugu cowrie-shell race game for two', players: '2 Players · local', duration: '10–20 min', modes: ['local'],
+    rules: ['This digital home-race version is inspired by Ashta Chamma; regional rules differ.', 'The four-shell throw gives 1–4 steps, with a special 8-step throw.', 'Use a 4 or 8 to bring a token into play. Tap a token after each throw to advance it.', 'Capture on open spaces and race all four tokens home. An 8 or a capture gives another throw.'],
+    tips: ['Save an 8-step throw for a token that can reach a safe landing.', 'Keep several tokens moving so one blocked route does not stall your game.'],
+  },
+  {
+    id: 'carrom', name: 'Carrom', shortName: 'Carrom', category: 'tabletop',
+    tagline: 'Flick the striker, pocket your colour, keep your turn', players: '2 Players · local', duration: '8–15 min', modes: ['local'],
+    rules: ['Drag back from the striker and release toward the coins to shoot.', 'Pocket your own colour to score and keep shooting. Pocketing the queen is worth 3 points.', 'Pocketing the striker is a foul and gives the next turn to your opponent.', 'The player with the most points when all coins are pocketed wins.'],
+    tips: ['Use a short pull for a gentle placement shot.', 'Aim for a rail when a direct line to a pocket is blocked.'],
+  },
+  {
+    id: 'tambola', name: 'Tambola · Housie', shortName: 'Tambola', category: 'tabletop',
+    tagline: 'Call 90 balls and race to the first full house', players: '2 Players · shared screen', duration: '5–15 min', modes: ['local'],
+    rules: ['Two randomized tickets are shown on the shared screen. Numbers mark automatically when called.', 'Tap Call next number to draw one of the 90 balls. Completed rows add a point.', 'Complete a full ticket first to win. Both tickets are scored together for a fair shared-screen round.'],
+    tips: ['Keep the called-number board in view as the draw count rises.', 'Rows complete at different times, so watch both tickets.'],
+  },
+  {
+    id: 'dice-duel', name: 'Dice Duel', shortName: 'Dice Duel', category: 'tabletop',
+    tagline: 'A friendly push-your-luck race to 50 points', players: '2 Players · local', duration: '3–8 min', modes: ['local'],
+    rules: ['Roll to add points to your turn total, then choose to roll again or bank.', 'A 1 wipes the turn total and passes the die to your opponent.', 'Banked points stay safe. First to 50 wins.'],
+    tips: ['Banking early is safe; rolling longer can build a bigger lead.', 'Look at the score gap before risking a high turn total.'],
   },
   {
     id: '2048',
@@ -246,7 +292,7 @@ export const GAMES: GameMeta[] = [
     players: 'Daily solo puzzle',
     duration: '2–5 min',
     rules: [
-      'Enter any five-letter word from the daily list.',
+      'Enter any five-letter word to test your letters.',
       'A bright tile marks a letter in the correct position. A warm tile shows it appears elsewhere.',
       'A muted tile means that letter is not in the answer.',
       'You have six guesses. The daily word is shared by everyone on the same date.',
@@ -255,5 +301,23 @@ export const GAMES: GameMeta[] = [
       'Use each guess to test letters you have not tried yet.',
       'Watch for repeated letters when a clue appears more than once.',
     ],
+  },
+  {
+    id: 'snake', name: 'Snake', shortName: 'Snake', category: 'arcade', modes: ['solo'],
+    tagline: 'Guide the growing snake, collect fruit, and beat your best', players: 'Solo arcade', duration: '2–6 min',
+    rules: ['Use the arrow keys or swipe controls to steer.', 'Collect glowing fruit to grow and score points.', 'Avoid the walls and your own tail.'],
+    tips: ['Plan a route around the outside before the snake gets long.', 'Use the pause control when you need a breather.'],
+  },
+  {
+    id: 'pocket-racer', name: 'Pocket Racer', shortName: 'Pocket Racer', category: 'arcade', modes: ['solo'],
+    tagline: 'Dodge the traffic in a quick three-lane sprint', players: 'Solo arcade', duration: '1–4 min',
+    rules: ['Tap a lane button or use the arrow keys to steer left, center, or right.', 'Each move advances traffic toward you. Avoid the cars to keep your run alive.', 'Your score tracks how far you travel.'],
+    tips: ['Look at the bottom of the road before choosing a lane.', 'Stay in the center when both outer lanes are blocked.'],
+  },
+  {
+    id: 'yahtzee', name: 'Yahtzee', shortName: 'Yahtzee', category: 'arcade', modes: ['solo'],
+    tagline: 'Five dice, three rolls, thirteen scoring choices', players: 'Solo dice game', duration: '8–15 min',
+    rules: ['Roll five dice up to three times. Tap dice to hold or release them between rolls.', 'Choose one scoring category after each turn; every category can be used once.', 'After thirteen turns the scorecard is complete.'],
+    tips: ['Hold useful pairs and reroll dice that do not support your chosen category.', 'Keep a Yahtzee chance open if five of a kind looks unlikely.'],
   },
 ];

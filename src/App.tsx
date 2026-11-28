@@ -58,8 +58,9 @@ import {
   createInitialMorrisState,
 } from './games/morris/engine';
 import { MORRIS_TOPOLOGIES, MorrisVariantId } from './games/morris/topologies';
-import { GAMES } from './games/registry';
-import { ArcadeState, createArcadeState, save2048BestScore } from './games/arcade';
+import { GAMES, getDefaultGameMode, getGameModes } from './games/registry';
+import { ArcadeState, createArcadeState, isValidArcadeState, save2048BestScore } from './games/arcade';
+import { savePartyBest } from './games/partyGames';
 import { ArcadeBoard } from './components/ArcadeBoard';
 import {
   ReversiState,
@@ -70,6 +71,7 @@ import {
 } from './games/reversi';
 import { Difficulty, GameId, GameMode, Player, THEMES, ThemeId } from './types/game';
 import { sound } from './utils/sound';
+import { backgroundMusic, MusicTrackId } from './utils/music';
 import { applyRemoteMove } from './games/stateTypes';
 import { ActiveTransport, PeerCallbacks, hostNearbyGame, hostOnlineRoom, joinNearbyGame, joinOnlineRoom } from './multiplayer/onlinePeer';
 import { HotspotHostSession, createHotspotHostSession, joinHotspotOffer } from './multiplayer/hotspotDirect';
@@ -123,12 +125,21 @@ function createInitialGameState(id: GameId): AnyGameState {
     case '2048':
     case 'minesweeper':
     case 'word-guess':
+    case 'chess':
+    case 'ludo':
+    case 'ashta-chamma':
+    case 'carrom':
+    case 'tambola':
+    case 'dice-duel':
+    case 'yahtzee':
+    case 'snake':
+    case 'pocket-racer':
       return { kind: 'arcade', data: createArcadeState(id) };
   }
 }
 
 function isGameId(value: unknown): value is GameId {
-  return typeof value === 'string' && GAMES.some((game) => game.id === value && game.category !== 'arcade');
+  return typeof value === 'string' && GAMES.some((game) => game.id === value && getGameModes(game).includes('online'));
 }
 
 function isAnyGameState(value: unknown): value is AnyGameState {
@@ -184,26 +195,7 @@ function isValidStateForGame(gameId: GameId, value: unknown): value is AnyGameSt
         !!value.data.scores &&
         Number.isInteger(value.data.scores[1]) && Number.isInteger(value.data.scores[2]);
     case 'arcade':
-      if (value.data.gameId !== gameId) return false;
-      if (value.data.gameId === '2048') {
-        return isGrid(value.data.board, 4, 4, (cell) => typeof cell === 'number' && Number.isInteger(cell) && cell >= 0 && (cell === 0 || (cell & (cell - 1)) === 0)) &&
-          Number.isInteger(value.data.score) && value.data.score >= 0 && Number.isInteger(value.data.best) && value.data.best >= value.data.score &&
-          typeof value.data.reached2048 === 'boolean' && typeof value.data.over === 'boolean';
-      }
-      if (value.data.gameId === 'minesweeper') {
-        return isGrid(value.data.board, 9, 9, (cell) => {
-          if (!cell || typeof cell !== 'object') return false;
-          const tile = cell as Record<string, unknown>;
-          return typeof tile.mine === 'boolean' && Number.isInteger(tile.adjacent) && Number(tile.adjacent) >= 0 && Number(tile.adjacent) <= 8 &&
-            typeof tile.revealed === 'boolean' && typeof tile.flagged === 'boolean';
-        }) &&
-          value.data.mineCount === 10 && Number.isInteger(value.data.flags) && value.data.flags >= 0 && value.data.flags <= 10 &&
-          ['playing', 'won', 'lost'].includes(value.data.status);
-      }
-      return /^[A-Z]{5}$/.test(value.data.target) && Array.isArray(value.data.guesses) && value.data.guesses.length <= 6 &&
-        value.data.guesses.every((word) => typeof word === 'string' && /^[A-Z]{5}$/.test(word)) &&
-        typeof value.data.current === 'string' && /^[A-Z]{0,5}$/.test(value.data.current) &&
-        ['playing', 'won', 'lost'].includes(value.data.status);
+      return value.data.gameId === gameId && isValidArcadeState(value.data);
   }
 }
 
@@ -237,14 +229,19 @@ function getBootState() {
 
 export function App() {
   const [boot] = useState(getBootState);
-  const initialMode = boot.route.screen === 'game' && boot.route.mode
+  const bootGame = GAMES.find((game) => game.id === boot.activeGameId) ?? GAMES[0];
+  const allowedBootModes = getGameModes(bootGame);
+  const initialMode = (boot.route.screen === 'game' && boot.route.mode && allowedBootModes.includes(boot.route.mode)
     ? boot.route.mode
-    : boot.savedMatch?.mode ?? (GAMES.find((game) => game.id === boot.activeGameId)?.category === 'arcade' ? 'solo' : 'ai');
+    : undefined) ?? (boot.savedMatch && allowedBootModes.includes(boot.savedMatch.mode) ? boot.savedMatch.mode : undefined) ?? getDefaultGameMode(bootGame);
   const [activeGameId, setActiveGameId] = useState<GameId>(boot.activeGameId);
   const [mode, setMode] = useState<GameMode>(initialMode);
   const [difficulty, setDifficulty] = useState<Difficulty>(boot.savedMatch?.difficulty ?? boot.preferences.difficulty);
   const [themeId, setThemeId] = useState<ThemeId>(boot.preferences.themeId);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(boot.preferences.soundEnabled);
+  const [musicEnabled, setMusicEnabled] = useState<boolean>(boot.preferences.musicEnabled);
+  const [musicTrack, setMusicTrack] = useState<MusicTrackId>(boot.preferences.musicTrack);
+  const musicEnabledRef = useRef(boot.preferences.musicEnabled);
 
   const [gameState, setGameState] = useState<AnyGameState>(boot.savedMatch?.state ?? createInitialGameState(boot.activeGameId));
   const [history, setHistory] = useState<AnyGameState[]>(boot.savedMatch?.history ?? []);
@@ -309,10 +306,40 @@ export function App() {
   }, [soundEnabled]);
 
   useEffect(() => {
-    if (!savePreferences({ themeId, soundEnabled, difficulty, lastGameId: resumeGameId })) {
+    if (!boot.preferences.musicEnabled) return;
+    const resumeMusic = () => {
+      window.setTimeout(() => {
+        if (musicEnabledRef.current) void backgroundMusic.play(musicTrack).catch(() => undefined);
+      }, 0);
+    };
+    window.addEventListener('pointerdown', resumeMusic, { once: true });
+    window.addEventListener('keydown', resumeMusic, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', resumeMusic);
+      window.removeEventListener('keydown', resumeMusic);
+    };
+  }, [boot.preferences.musicEnabled, musicTrack]);
+
+  useEffect(() => () => backgroundMusic.stop(), []);
+
+  useEffect(() => {
+    if (!savePreferences({ themeId, soundEnabled, musicEnabled, musicTrack, difficulty, lastGameId: resumeGameId })) {
       setStorageUnavailable(true);
     } else setStorageUnavailable(false);
-  }, [themeId, soundEnabled, difficulty, resumeGameId]);
+  }, [themeId, soundEnabled, musicEnabled, musicTrack, difficulty, resumeGameId]);
+
+  const toggleMusic = useCallback(() => {
+    const enabled = !musicEnabledRef.current;
+    musicEnabledRef.current = enabled;
+    setMusicEnabled(enabled);
+    if (enabled) void backgroundMusic.play(musicTrack).catch(() => undefined);
+    else backgroundMusic.stop();
+  }, [musicTrack]);
+
+  const selectMusicTrack = useCallback((track: MusicTrackId) => {
+    setMusicTrack(track);
+    if (musicEnabledRef.current) void backgroundMusic.play(track).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (showLobby || mode === 'online') return;
@@ -743,9 +770,11 @@ export function App() {
       if (mode === 'online') resetConnection();
       const saved = restoreSavedMatch(route.gameId);
       const nextState = saved?.state ?? createInitialGameState(route.gameId);
-      const category = GAMES.find((game) => game.id === route.gameId)?.category;
-      const fallbackMode: GameMode = category === 'arcade' ? 'solo' : mode === 'online' || mode === 'solo' ? 'local' : 'ai';
-      const nextMode = route.mode ?? saved?.mode ?? fallbackMode;
+      const nextGame = GAMES.find((game) => game.id === route.gameId) ?? GAMES[0];
+      const modes = getGameModes(nextGame);
+      const fallbackMode = getDefaultGameMode(nextGame);
+      const nextMode = (route.mode && modes.includes(route.mode) ? route.mode : undefined) ??
+        (saved && modes.includes(saved.mode) ? saved.mode : undefined) ?? fallbackMode;
       setActiveGameId(route.gameId);
       activeGameIdRef.current = route.gameId;
       setMode(nextMode);
@@ -775,10 +804,11 @@ export function App() {
 
   const handleSelectGame = (id: GameId) => {
     const targetGame = GAMES.find((game) => game.id === id);
-    if (!targetGame || (mode === 'online' && (!isHost || targetGame.category === 'arcade'))) return;
+    if (!targetGame || (mode === 'online' && (!isHost || !getGameModes(targetGame).includes('online')))) return;
     const saved = mode === 'online' ? null : restoreSavedMatch(id);
-    const fallbackMode: GameMode = targetGame.category === 'arcade' ? 'solo' : mode === 'online' || mode === 'solo' ? 'ai' : mode;
-    const nextMode = saved?.mode ?? fallbackMode;
+    const modes = getGameModes(targetGame);
+    const fallbackMode: GameMode = mode !== 'online' && modes.includes(mode) ? mode : getDefaultGameMode(targetGame);
+    const nextMode = saved && modes.includes(saved.mode) ? saved.mode : fallbackMode;
     setActiveGameId(id);
     activeGameIdRef.current = id;
     if (saved) {
@@ -807,9 +837,10 @@ export function App() {
 
   const handleModeChange = (nextMode: GameMode) => {
     if (nextMode === 'online') {
-      openMultiplayer('online');
+      if (getGameModes(activeMeta).includes('online')) openMultiplayer('online');
       return;
     }
+    if (!getGameModes(activeMeta).includes(nextMode)) return;
     if (nextMode === mode) return;
     if (connectionPhase === 'connected') resetConnection();
     setMode(nextMode);
@@ -837,16 +868,27 @@ export function App() {
       updated = { ...next, best: current.data.best };
     }
     if (updated.gameId === '2048') save2048BestScore(updated.best);
+    if (updated.gameId === 'snake') savePartyBest('snake', updated.best);
+    if (updated.gameId === 'pocket-racer') savePartyBest('pocket-racer', updated.best);
     const nextState: AnyGameState = { kind: 'arcade', data: updated };
     if (recordUndo) pushState(nextState);
     else {
+      if (history.length === 0 && (updated.gameId === 'snake' || updated.gameId === 'pocket-racer')) {
+        setHistory([current]);
+      }
       gameStateRef.current = nextState;
       setGameState(nextState);
     }
-    if (updated.gameId === 'minesweeper' && updated.status === 'lost') sound.capture();
+    if (current.data.winner === null && updated.winner !== null) sound.win();
+    else if (updated.gameId === 'minesweeper' && updated.status === 'lost') sound.capture();
     else if (updated.gameId === '2048' && current.data.gameId === '2048' && updated.score > current.data.score) sound.move();
-    else if (recordUndo) sound.place();
-  }, [pushState]);
+    else if (updated.gameId === 'snake' && current.data.gameId === 'snake' && updated.score > current.data.score) sound.capture();
+    else if (updated.gameId === 'pocket-racer' && updated.status === 'crashed') sound.capture();
+    else if (updated.gameId === 'carrom' && current.data.gameId === 'carrom' && updated.shots > current.data.shots) {
+      if (updated.scores[1] + updated.scores[2] > current.data.scores[1] + current.data.scores[2]) sound.capture();
+      else sound.move();
+    } else if (recordUndo) sound.place();
+  }, [history.length, pushState]);
 
   const handleUndo = () => {
     if (history.length === 0 || aiThinking || mode === 'online') return;
@@ -1153,13 +1195,30 @@ export function App() {
         };
       }
       case 'arcade': {
-        const score = gameState.data.gameId === '2048'
-          ? gameState.data.score
-          : gameState.data.gameId === 'minesweeper'
-            ? gameState.data.board.flat().filter((tile) => tile.revealed && !tile.mine).length
-            : gameState.data.guesses.length;
+        const data = gameState.data;
+        if (data.gameId === 'chess') {
+          const p1 = data.board.flat().filter((piece) => piece?.player === 1).length;
+          const p2 = data.board.flat().filter((piece) => piece?.player === 2).length;
+          return { p1Metric: { value: String(p1), label: 'pieces' } satisfies PlayerMetric, p2Metric: { value: String(p2), label: 'pieces' } satisfies PlayerMetric, statusHint: data.status === 'check' ? 'Check — protect your king' : data.winner === null ? 'Select one of your pieces, then choose a highlighted square' : undefined, gameOverSubtitle: data.status === 'stalemate' ? 'No legal moves · Stalemate' : 'Checkmate' };
+        }
+        if (data.gameId === 'ludo' || data.gameId === 'ashta-chamma') {
+          const finish = data.trackLength + 5;
+          return { p1Metric: { value: String(data.tokens[1].filter((step) => step === finish).length), label: 'home' } satisfies PlayerMetric, p2Metric: { value: String(data.tokens[2].filter((step) => step === finish).length), label: 'home' } satisfies PlayerMetric, statusHint: data.die === null ? 'Roll to move a token' : data.die !== null && (data.gameId === 'ludo' ? data.die !== 6 : data.die !== 4 && data.die !== 8) && data.tokens[data.turn].every((step) => step < 0) ? 'You need a special roll to bring a token out' : 'Choose one of your highlighted tokens', gameOverSubtitle: '' };
+        }
+        if (data.gameId === 'carrom') return { p1Metric: { value: String(data.scores[1]), label: 'points' } satisfies PlayerMetric, p2Metric: { value: String(data.scores[2]), label: 'points' } satisfies PlayerMetric, statusHint: 'Drag back from the striker, then release toward the coins', gameOverSubtitle: `Final score: ${data.scores[1]} – ${data.scores[2]}` };
+        if (data.gameId === 'tambola') return { p1Metric: { value: String(data.scores[1]), label: 'rows' } satisfies PlayerMetric, p2Metric: { value: String(data.scores[2]), label: 'rows' } satisfies PlayerMetric, statusHint: `Ball ${data.called.length} of 90 · Player ${data.turn} calls next`, gameOverSubtitle: '' };
+        if (data.gameId === 'dice-duel') return { p1Metric: { value: String(data.scores[1]), label: 'points', detail: data.turn === 1 ? `+${data.turnScore} this turn` : undefined } satisfies PlayerMetric, p2Metric: { value: String(data.scores[2]), label: 'points', detail: data.turn === 2 ? `+${data.turnScore} this turn` : undefined } satisfies PlayerMetric, statusHint: `First to ${data.goal} points wins`, gameOverSubtitle: `Final score: ${data.scores[1]} – ${data.scores[2]}` };
+        if (data.gameId === 'yahtzee') {
+          const total = Object.values(data.scores).reduce((sum, score) => sum + (score ?? 0), 0);
+          return { p1Metric: { value: String(total), label: 'points', detail: `${Object.keys(data.scores).length}/13 rounds` } satisfies PlayerMetric, p2Metric: { value: '—', label: 'solo' } satisfies PlayerMetric, statusHint: undefined, gameOverSubtitle: '' };
+        }
+        const score = data.gameId === '2048' || data.gameId === 'snake' || data.gameId === 'pocket-racer'
+          ? data.score
+          : data.gameId === 'minesweeper'
+            ? data.board.flat().filter((tile) => tile.revealed && !tile.mine).length
+            : data.gameId === 'word-guess' ? data.guesses.length : 0;
         return {
-          p1Metric: { value: String(score), label: 'score' } satisfies PlayerMetric,
+          p1Metric: { value: String(score), label: 'score', detail: data.gameId === 'snake' || data.gameId === 'pocket-racer' ? `Best ${data.best}` : undefined } satisfies PlayerMetric,
           p2Metric: { value: '—', label: 'solo' } satisfies PlayerMetric,
           statusHint: undefined,
           gameOverSubtitle: '',
@@ -1252,6 +1311,12 @@ export function App() {
                 resumeGameId={resumeGameId}
                 onResumeGame={resumeLastGame}
                 storageUnavailable={storageUnavailable}
+                musicEnabled={musicEnabled}
+                musicTrack={musicTrack}
+                soundEnabled={soundEnabled}
+                onToggleMusic={toggleMusic}
+                onSelectMusicTrack={selectMusicTrack}
+                onToggleSound={() => setSoundEnabled((value) => !value)}
               />
             )}
           </main>
@@ -1267,7 +1332,11 @@ export function App() {
               onToggleTheme={toggleTheme}
               soundEnabled={soundEnabled}
               onToggleSound={() => setSoundEnabled((v) => !v)}
-              canUndo={history.length > 0 && !aiThinking && mode !== 'online' && !(gameState.kind === 'arcade' && gameState.data.gameId === 'word-guess')}
+              musicEnabled={musicEnabled}
+              musicTrack={musicTrack}
+              onToggleMusic={toggleMusic}
+              onSelectMusicTrack={selectMusicTrack}
+              canUndo={history.length > 0 && !aiThinking && mode !== 'online' && !(gameState.kind === 'arcade' && ['word-guess', 'snake', 'pocket-racer'].includes(gameState.data.gameId))}
               canReset={mode !== 'online' || isHost}
               onUndo={handleUndo}
               onReset={() => resetGame(activeGameId)}

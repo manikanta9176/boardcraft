@@ -169,5 +169,21 @@ export const GameIcon: React.FC<GameIconProps> = ({ id, className = 'w-5 h-5' })
           <path d="M4 20h16" />
         </svg>
       );
+    case 'chess':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className={className}><path d="M7 21h11M8 18h8l-1.4-6.3a4 4 0 0 0-2.5-3l1.7-3.2-2.2-2.2-2 3.2-2-1.1-.7 2.8 2.3 1.1L8 18Z" /><circle cx="15.5" cy="5" r="1" fill="currentColor" /></svg>;
+    case 'ludo':
+    case 'ashta-chamma':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M8 3v6h8V3M3 8h6v8H3m18-1h-6V9h6M9 21v-6h6v6"/><circle cx="12" cy="12" r="2.1" fill="currentColor" /></svg>;
+    case 'carrom':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}><rect x="2.5" y="2.5" width="19" height="19" rx="4"/><circle cx="5.2" cy="5.2" r="1.8" fill="currentColor"/><circle cx="18.8" cy="5.2" r="1.8" fill="currentColor"/><circle cx="5.2" cy="18.8" r="1.8" fill="currentColor"/><circle cx="18.8" cy="18.8" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="2.8"/><circle cx="10" cy="12" r="1.4" fill="currentColor"/></svg>;
+    case 'tambola':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className={className}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M9 5v14m6-14v14M3 10h18m-18 4h18"/><circle cx="6" cy="7.5" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="18" cy="16.5" r=".9" fill="currentColor"/></svg>;
+    case 'dice-duel':
+    case 'yahtzee':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className={className}><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/><circle cx="16.5" cy="7.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="7.5" cy="16.5" r="1.2" fill="currentColor"/><circle cx="16.5" cy="16.5" r="1.2" fill="currentColor"/></svg>;
+    case 'snake':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 5h8a3 3 0 0 1 3 3v8a3 3 0 0 0 3 3h2M4 19h3a3 3 0 0 0 3-3v-2"/><circle cx="19" cy="19" r="1.5" fill="currentColor"/></svg>;
+    case 'pocket-racer':
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m5 15 2-6a2 2 0 0 1 2-1h6a2 2 0 0 1 2 1l2 6v4h-2v-2H7v2H5v-4Z"/><path d="M8 13h8M3 5l3 2m15-2-3 2"/><circle cx="8" cy="15" r="1" fill="currentColor"/><circle cx="16" cy="15" r="1" fill="currentColor"/></svg>;
   }
 };

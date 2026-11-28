@@ -8,11 +8,12 @@ import {
   Sparkles,
   Undo2,
   Users,
-  Volume2,
-  VolumeX,
 } from 'lucide-react';
 import { Difficulty, GameMeta, GameMode, ThemePalette } from '../types/game';
+import { getGameModes } from '../games/registry';
 import { ThemeToggle } from './ThemeToggle';
+import { AudioMenu } from './AudioMenu';
+import { MusicTrackId } from '../utils/music';
 
 interface GameHeaderProps {
   game: GameMeta;
@@ -24,6 +25,10 @@ interface GameHeaderProps {
   onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
+  musicEnabled: boolean;
+  musicTrack: MusicTrackId;
+  onToggleMusic: () => void;
+  onSelectMusicTrack: (track: MusicTrackId) => void;
   canUndo: boolean;
   canReset: boolean;
   onUndo: () => void;
@@ -44,6 +49,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   onToggleTheme,
   soundEnabled,
   onToggleSound,
+  musicEnabled,
+  musicTrack,
+  onToggleMusic,
+  onSelectMusicTrack,
   canUndo,
   canReset,
   onUndo,
@@ -53,6 +62,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   onOpenMultiplayer,
   multiplayerConnected,
 }) => {
+  const availableModes = getGameModes(game);
   return (
     <header
       className="match-header sticky top-0 z-20 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3"
@@ -87,10 +97,10 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
       <div className="flex flex-wrap items-center gap-2">
         {/* Mode Switcher */}
-        {game.category === 'arcade' ? (
+        {mode !== 'online' && !(availableModes.includes('ai') && availableModes.includes('local')) ? (
           <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Solo game</span>
+            <span>{mode === 'solo' ? 'Solo game' : 'Pass & play'}</span>
           </div>
         ) : mode === 'online' ? (
           <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold" style={{ backgroundColor: theme.accentSoft, color: theme.accent, border: `1px solid ${theme.accent}35` }}>
@@ -147,7 +157,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
-          {!multiplayerConnected && game.category !== 'arcade' && (
+          {!multiplayerConnected && availableModes.includes('online') && (
             <button
               onClick={onOpenMultiplayer}
               aria-label="Invite a friend to play online"
@@ -188,20 +198,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
             <RotateCcw className="w-4 h-4" />
           </button>
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
-          <button
-            onClick={onToggleSound}
-            title={soundEnabled ? 'Mute Sound' : 'Enable Sound'}
-            aria-label={soundEnabled ? 'Mute sound' : 'Enable sound'}
-            aria-pressed={soundEnabled}
-            className="grid min-h-11 min-w-11 place-items-center rounded-full cursor-pointer"
-            style={{
-              backgroundColor: theme.bgSurface,
-              color: theme.textSecondary,
-              border: `1px solid ${theme.border}`,
-            }}
-          >
-            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-          </button>
+          <AudioMenu theme={theme} soundEnabled={soundEnabled} onToggleSound={onToggleSound} musicEnabled={musicEnabled} musicTrack={musicTrack} onToggleMusic={onToggleMusic} onSelectMusicTrack={onSelectMusicTrack} />
           <button
             onClick={onOpenRules}
             aria-label="Show game rules"

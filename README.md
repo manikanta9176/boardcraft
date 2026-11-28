@@ -1,6 +1,6 @@
 # PlayDeck — Board, Arcade & Daily Games
 
-A relaxed, modern game room with **13 classic strategy, arcade, and daily games** in one responsive React + TypeScript app, ready to deploy on Vercel.
+A relaxed, modern game room with **22 classic strategy, tabletop, arcade, and daily games** in one responsive React + TypeScript app, ready to deploy on Vercel.
 
 ## Included Games
 
@@ -16,12 +16,23 @@ A relaxed, modern game room with **13 classic strategy, arcade, and daily games*
 - **Checkers (Draughts)** — 8×8 diagonal advances, mandatory captures, multi-jumps, and Kings
 - **Mancala (Kalah)** — Ancient count-and-sow pit game with extra turns & opposite-pit captures
 - **Gomoku** — 15×15 five-in-a-row intersection strategy
-- **Dots & Boxes** — 5×5 dot grid with edge drawing, box claiming, and chain tactics
+- **Chukkalata (చుక్కలాట) · Dots & Boxes** — Telugu pencil-and-paper classic with edge drawing, box claiming, and chain tactics
+
+### Tabletop & Party
+- **Chess** — Pass-and-play chess with legal move hints, castling, en passant, check, and automatic queen promotion
+- **Ludo** — A quick two-player race with four tokens each, safe spaces, captures, and home lanes
+- **Ashta Chamma** — A two-player cowrie-shell race inspired by the Telugu traditional game
+- **Carrom** — Drag-to-shoot striker play with coin collisions, pocket physics, turns, and scoring
+- **Tambola (Housie)** — Two auto-marking 90-ball tickets with row scoring and full-house wins
+- **Dice Duel** — A two-player push-your-luck dice race to 50
 
 ### Arcade & Daily Games
 - **2048** — Slide tiles together, swipe on phones, and keep a saved personal best
 - **Minesweeper** — A compact 9×9 puzzle with a safe first reveal and touch-friendly flag mode
 - **Word Guess** — A five-letter daily puzzle with six tries, keyboard input, and on-screen keys
+- **Snake** — Swipe, tap, or use arrow keys to guide the snake and beat a saved personal best
+- **Pocket Racer** — A compact three-lane traffic-dodging arcade run with keyboard and touch controls
+- **Yahtzee** — A complete solo five-dice scorecard with holds and 13 scoring categories
 
 ## Features
 - **Play vs AI** (Easy / Medium / Hard), **Local 2-Player** pass-and-play, solo arcade games, or invite a friend to a live match
@@ -29,10 +40,12 @@ A relaxed, modern game room with **13 classic strategy, arcade, and daily games*
 - **Find Nearby** to list games hosted on the same Wi-Fi or hotspot, then connect directly device-to-device
 - **Offline QR Pairing** as a no-internet fallback for nearby devices
 - **Light / Dark Mode**: Paper & Ink for light mode and Carbon Ember for dark mode, inspired by StackDome's warm charcoal and ember palette
+- **Per-game play modes**: solo, local pass-and-play, vs AI, and online rooms are shown only where supported
+- **Independent audio controls** for game effects and optional background music, with three original procedural tracks
 - **Full Undo Support**, **Interactive Rules Modal**, and **Web Audio Tactile Sound Effects**
 - **Responsive Design** with custom crisp SVG boards for desktop and mobile
 - **Direct game links** at `/play/<game-id>` with browser back and forward navigation
-- **Automatic local saves** for in-progress solo and pass-and-play matches, plus theme, sound, and difficulty preferences
+- **Automatic local saves** for in-progress solo and pass-and-play matches, plus theme, sound, music, track, and difficulty preferences
 
 Progress and preferences stay in versioned browser storage on the current device. 2048 also keeps a separate personal best across new rounds. Online matches are never saved locally. Use the library’s **Continue** action to resume the most recent saved match.
 

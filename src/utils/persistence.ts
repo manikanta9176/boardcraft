@@ -1,4 +1,5 @@
 import { Difficulty, GameId, ThemeId } from '../types/game';
+import { isMusicTrackId, MusicTrackId } from './music';
 
 const STORAGE_VERSION = 1;
 const PREFERENCES_KEY = `boardcraft:preferences:v${STORAGE_VERSION}`;
@@ -8,6 +9,8 @@ const MAX_HISTORY = 80;
 export interface PlayerPreferences {
   themeId: ThemeId;
   soundEnabled: boolean;
+  musicEnabled: boolean;
+  musicTrack: MusicTrackId;
   difficulty: Difficulty;
   lastGameId: GameId | null;
 }
@@ -60,7 +63,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isGameId(value: unknown): value is GameId {
-  return value === 'three-mens-morris' || value === 'six-mens-morris' || value === 'nine-mens-morris' || value === 'twelve-mens-morris' || value === 'connect4' || value === 'reversi' || value === 'checkers' || value === 'mancala' || value === 'gomoku' || value === 'dots-and-boxes' || value === '2048' || value === 'minesweeper' || value === 'word-guess';
+  return value === 'three-mens-morris' || value === 'six-mens-morris' || value === 'nine-mens-morris' || value === 'twelve-mens-morris' || value === 'connect4' || value === 'reversi' || value === 'checkers' || value === 'mancala' || value === 'gomoku' || value === 'dots-and-boxes' || value === '2048' || value === 'minesweeper' || value === 'word-guess' || value === 'chess' || value === 'ludo' || value === 'ashta-chamma' || value === 'carrom' || value === 'tambola' || value === 'dice-duel' || value === 'yahtzee' || value === 'snake' || value === 'pocket-racer';
 }
 
 function normalizeThemeId(value: unknown): ThemeId | null {
@@ -79,6 +82,8 @@ export function loadPreferences(): PlayerPreferences {
     return {
       themeId: normalizeThemeId(value.themeId) ?? 'paper',
       soundEnabled: typeof value.soundEnabled === 'boolean' ? value.soundEnabled : true,
+      musicEnabled: typeof value.musicEnabled === 'boolean' ? value.musicEnabled : false,
+      musicTrack: isMusicTrackId(value.musicTrack) ? value.musicTrack : 'quiet-keys',
       difficulty: isDifficulty(value.difficulty) ? value.difficulty : 'medium',
       lastGameId: isGameId(value.lastGameId) ? value.lastGameId : null,
     };
@@ -90,6 +95,8 @@ export function loadPreferences(): PlayerPreferences {
   return {
     themeId: normalizeThemeId(legacyTheme) ?? 'paper',
     soundEnabled: legacySound === null ? true : legacySound === 'true',
+    musicEnabled: false,
+    musicTrack: 'quiet-keys',
     difficulty: 'medium',
     lastGameId: null,
   };

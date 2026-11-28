@@ -24,17 +24,17 @@ describe('BoardCraft browser persistence', () => {
     values.set('boardcraft-sound', 'false');
     vi.resetModules();
     return import('../persistence').then(({ loadPreferences }) => {
-      expect(loadPreferences()).toEqual({ themeId: 'paper', soundEnabled: false, difficulty: 'medium', lastGameId: null });
+      expect(loadPreferences()).toEqual({ themeId: 'paper', soundEnabled: false, musicEnabled: false, musicTrack: 'quiet-keys', difficulty: 'medium', lastGameId: null });
     });
   });
 
   it('persists Paper & Ink as light mode', () => {
-    expect(persistence.savePreferences({ themeId: 'paper', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(true);
+    expect(persistence.savePreferences({ themeId: 'paper', soundEnabled: true, musicEnabled: false, musicTrack: 'quiet-keys', difficulty: 'medium', lastGameId: null })).toBe(true);
     expect(persistence.loadPreferences().themeId).toBe('paper');
   });
 
   it('persists the StackDome-inspired dark theme preference', () => {
-    expect(persistence.savePreferences({ themeId: 'stackdome', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(true);
+    expect(persistence.savePreferences({ themeId: 'stackdome', soundEnabled: true, musicEnabled: false, musicTrack: 'quiet-keys', difficulty: 'medium', lastGameId: null })).toBe(true);
     expect(persistence.loadPreferences().themeId).toBe('stackdome');
   });
 
@@ -92,6 +92,6 @@ describe('BoardCraft browser persistence', () => {
     vi.resetModules();
     const { loadPreferences, savePreferences } = await import('../persistence');
     expect(loadPreferences().soundEnabled).toBe(true);
-    expect(savePreferences({ themeId: 'stackdome', soundEnabled: true, difficulty: 'medium', lastGameId: null })).toBe(false);
+    expect(savePreferences({ themeId: 'stackdome', soundEnabled: true, musicEnabled: false, musicTrack: 'quiet-keys', difficulty: 'medium', lastGameId: null })).toBe(false);
   });
 });
